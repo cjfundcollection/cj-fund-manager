@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CJ fund</title>
+    
+    <!-- 1. DATA URI MANIFEST (തനിയെ ഇൻസ്റ്റാൾ ആകാൻ സഹായിക്കുന്നു) -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22short_name%22%3A%22CJ%20Fund%22%2C%22name%22%3A%22CJ%20Friends%20Emergency%20Fund%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F2489%2F2489756.png%22%2C%22type%22%3A%22image%2Fpng%22%2C%22sizes%22%3A%22512x512%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22background_color%22%3A%22%231e0b36%22%2C%22theme_color%22%3A%22%233b1563%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%7D">
+    <meta name="theme-color" content="#3b1563">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e0b36 0%, #3b1563 50%, #631975 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* ---------------- Install App Button Banner ---------------- */
+        .install-banner {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(90deg, #ff9f43, #ff5252);
+            padding: 12px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
+            cursor: pointer;
+            border: none;
+            font-size: 15px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        /* ---------------- Login Screen ---------------- */
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 35px 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-top: auto;
+            margin-bottom: auto;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .login-container h1 {
+            color: #ffd700;
+            font-size: 36px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .login-container p {
+            color: #ddd;
+            font-size: 14px;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #eee;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .input-group select option {
+            color: #333;
+            background: #fff;
+        }
+
+        .input-group input:focus {
+            border-color: #ffd700;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #ff007f, #7f00ff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 127, 0.5);
+        }
+
+        .link-btn {
+            background: none;
+            color: #ffd700;
+            border: none;
+            font-size: 14px;
+            margin-top: 15px;
+            cursor: pointer;
+            text-decoration: underline;
+            width: auto;
+            display: inline-block;
+            padding: 0;
+        }
+
+        /* ---------------- Force Password Change Screen ---------------- */
+        .force-password-container {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-top: auto;
+            margin-bottom: auto;
+            box-sizing: border-box;
+        }
+        .force-password-container h2 {
+            color: #ff4d4d;
+            margin-top: 0;
+            text-align: center;
+        }
+        .force-password-container p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+        .force-password-container .input-group label { color: #444; }
+        .force-password-container .input-group input { color: #333; background: #fff; border: 1px solid #ccc; }
+
+        /* ---------------- Main App Content ---------------- */
+        .app-content {
+            display: none;
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .user-profile-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .user-profile-header h2 {
+            margin: 0;
+            color: #3b1563;
+            font-size: 26px;
+        }
+
+        .user-profile-header p {
+            margin: 5px 0 0 0;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 15px;
+            border-left: 5px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .status-box.due { border-left-color: #ff4d4d; background: #fff5f5; }
+        .status-box.paid { border-left-color: #2ecc71; background: #f5fdf8; }
+        
+        .signal {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .signal.red { background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; }
+        .signal.green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        
+        .btn-square {
+            display: none;
+            padding: 8px 16px;
+            background: #ff4d4d;
+            color: white;
+            text-align: center;
+            border: 2px solid #ff4d4d;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 6px rgba(255, 77, 77, 0.2);
+        }
+
+        .btn-square:hover {
+            background: white;
+            color: #ff4d4d;
+            box-shadow: 0 4px 10px rgba(255, 77, 77, 0.4);
+        }
+
+        .balance-box {
+            background: linear-gradient(135deg, #3b1563, #1e0b36);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .balance-box span {
+            display: block;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ddd;
+        }
+
+        .balance-box h3 {
+            margin: 5px 0 0 0;
+            font-size: 28px;
+            color: #ffd700;
+        }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: #3498db;
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            box-sizing: border-box;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .payment-section {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fffdf5;
+            text-align: center;
+        }
+
+        /* Paid/Pending List Styles */
+        .summary-list-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #444;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .member-badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .badge {
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .badge.paid {
+            background-color: #e8f8f0;
+            color: #2ecc71;
+            border: 1px solid #bfe3cc;
+        }
+
+        .badge.pending {
+            background-color: #fdf2f2;
+            color: #ff4d4d;
+            border: 1px solid #fbcbcb;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .filter-row .input-group { flex: 1; margin-bottom: 0; }
+        .filter-row .input-group label { color: #555; }
+        .filter-row .input-group input { color: #333; background: #fff; border: 1px solid #ccc; }
+
+        #printableStatementArea {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; color: #333; }
+        .text-green { color: #2ecc71; font-weight: bold; }
+        .text-red { color: #ff4d4d; font-weight: bold; }
+    </style>
+
+    <!-- External Script Assets -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<!-- 📱 INSTALL APP BUTTON BANNER (ക്രോം സപ്പോർട്ട് ഉള്ള ഫോണുകളിൽ കാണിക്കും) -->
+<button class="install-banner" id="installBtn" onclick="triggerAppInstallation()">
+    📲 Install CJ Fund Official App
+</button>
+
+<!-- 1. Login Screen -->
+<div class="login-container" id="loginPage">
+    <h1>CJ fund</h1>
+    <p>Friends Emergency Fund App</p>
+    
+    <div class="input-group">
+        <label for="username">Choose Your Name</label>
+        <select id="username" onchange="checkUserSelection()">
+            <option value="">Select Your Name</option>
+            <option value="Haris">Haris</option>
+            <option value="Hasain">Hasain</option>
+            <option value="Ismail">Ismail</option>
+            <option value="Jaisal">Jaisal</option>
+            <option value="Luqman">Luqman</option>
+            <option value="Saloob">Saloob</option>
+            <option value="Sameer">Sameer</option>
+            <option value="Shamsu">Shamsu</option>
+        </select>
+    </div>
+    
+    <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password (Default is 1234)">
+    </div>
+    
+    <button class="btn-primary" onclick="handleLogin()">Login</button>
+    <center><button class="link-btn" id="resetBtn" onclick="triggerPasswordReset()" style="display:none;">Forgot Password?</button></center>
+</div>
+
+<!-- 2. Force Change Password Screen -->
+<div class="force-password-container" id="passwordChangePage">
+    <h2 id="securityPageTitle">Security Update</h2>
+    <p id="securityPageDesc">You are logged in with the default password. For security reasons, you must set a new personal password before accessing the dashboard.</p>
+    
+    <div class="input-group">
+        <label for="newPassword">New Password</label>
+        <input type="password" id="newPassword" placeholder="Enter new secret password">
+    </div>
+    <div class="input-group">
+        <label for="confirmPassword">Confirm New Password</label>
+        <input type="password" id="confirmPassword" placeholder="Retype new password">
+    </div>
+    
+    <button class="btn-primary" style="background: #2ecc71; box-shadow: none;" onclick="updatePassword()">Update Password</button>
+</div>
+
+<!-- 3. Main Dashboard Screen -->
+<div class="app-content" id="appContent">
+    
+    <div class="container">
+        <!-- 👤 User Profile -->
+        <div class="user-profile-header">
+            <h2 id="userWelcome">Name</h2>
+            <p id="userPhone">📞 +91 00000 00000</p>
+            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px; display:inline-block;">ADMIN ACCESS</span>
+        </div>
+
+        <!-- 🔔 Payment Due / Paid Status -->
+        <div id="statusBox" class="status-box due">
+            <p style="font-size: 16px; font-weight: bold; margin: 0; line-height: 1.4;">
+                <span id="statusSignal" class="signal red"></span> 
+                <span id="statusText">Loading Status...</span>
+            </p>
+            <button id="payNowBtn" class="btn-square" onclick="showPaymentForm()">Pay Now</button>
+        </div>
+
+        <!-- 💰 Total Balance Box -->
+        <div class="balance-box">
+            <span>Total Fund Balance</span>
+            <h3 id="totalBalanceView">₹400</h3>
+        </div>
+
+        <div id="paymentForm" class="payment-section">
+            <p style="margin: 0 0 15px 0; font-size: 14px; color: #666; line-height: 1.4;">
+                Clicking the button below will open your phone's <b>UPI Apps</b> to directly pay the due amount.
+            </p>
+            <a id="upiPayLink" href="#" class="btn-action" style="background: #2ecc71; margin-top:0; margin-bottom: 15px;">Launch UPI App & Pay</a>
+            
+            <div class="input-group" style="margin-top:15px; text-align: left;">
+                <label style="color:#555">Paste UPI Transaction ID / UTR:</label>
+                <input type="text" id="txnId" placeholder="12-digit number from UPI app" style="color:#333; background:#fff; border:1px solid #ccc;">
+            </div>
+            <button class="btn-action" style="margin-top: 15px; background: #333;" onclick="submitTransaction()">Submit for Admin Verification</button>
+        </div>
+    </div>
+
+    <!-- 📊 Monthly Paid / Pending List Tracker -->
+    <div class="container">
+        <h3 style="margin-bottom: 5px;">📈 Current Month Status</h3>
+        <p id="monthTrackerTitle" style="margin: 0 0 15px 0; color: #666; font-size: 14px; font-weight: bold;">Tracker</p>
+        
+        <div class="summary-list-title" id="paidCountText">Paid (0)</div>
+        <div class="member-badge-list" id="paidBadgeList"></div>
+
+        <div class="summary-list-title" id="pendingCountText">Pending (0)</div>
+        <div class="member-badge-list" id="pendingBadgeList"></div>
+    </div>
+
+    <!-- Statement Section -->
+    <div class="container">
+        <h3>📊 Fund Statement</h3>
+        
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label style="color:#555">Select Month:</label>
+            <select id="monthFilter" onchange="filterByMonth()" style="color:#333; background:#fff; border:1px solid #ccc;">
+                <option value="all">All Statements</option>
+            </select>
+        </div>
+
+        <p style="font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px;">Custom Time Statement:</p>
+        <div class="filter-row">
+            <div class="input-group">
+                <label>From:</label>
+                <input type="date" id="fromDate">
+            </div>
+            <div class="input-group">
+                <label>To:</label>
+                <input type="date" id="toDate">
+            </div>
+        </div>
+        <button class="btn-action" style="padding: 8px; font-size: 14px; background: #555; margin-top: 5px; margin-bottom: 20px;" onclick="filterByCustomDate()">Filter Statement</button>
+
+        <button class="btn-action" style="background: #27ae60; color: white; margin-bottom: 15px; font-size: 14px; padding: 10px;" onclick="downloadPDFStatement()">📥 Download PDF Statement</button>
+
+        <div id="printableStatementArea">
+            <h4 id="pdfReportTitle" style="margin: 5px 0; color: #3b1563; display: none; text-align: center;">CJ Fund Official Report</h4>
+            <table id="statementTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Amount / Status</th>
+                    </tr>
+                </thead>
+                <tbody id="statementBody"></tbody>
+            </table>
+        </div>
+        <button onclick="logout()" style="background:#ef4444; width:100%; border:none; padding:12px; border-radius:10px; color:white; font-weight:bold; font-size:16px; margin-top:15px; cursor:pointer;">Logout</button>
+    </div>
+</div>
+
+<script>
+    // ---------------- INLINE SERVICE WORKER GENERATION ----------------
+    // മറ്റൊരു ഫയലിന്റെ സഹായമില്ലാതെ ഈ പേജിനെ PWA ആക്കാൻ സഹായിക്കുന്നു.
+    if ('serviceWorker' in navigator) {
+        const swBlob = new Blob([`
+            const CACHE_NAME = 'cj-fund-v2';
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));
+        `], { type: 'text/javascript' });
+        
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl).then(() => {
+            console.log("PWA Engine Booted Successfully!");
+        }).catch(err => console.log("PWA Error:", err));
+    }
+
+    // ---------------- PWA INSTALL ENGINE ----------------
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // ലോഗിൻ പേജിൽ ഇൻസ്റ്റാൾ ബട്ടൺ കാണിക്കുന്നു
+        if(document.getElementById('loginPage').style.display !== 'none') {
+            document.getElementById('installBtn').style.display = 'block';
+        }
+    });
+
+    function triggerAppInstallation() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User installed the app');
+                document.getElementById('installBtn').style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        document.getElementById('installBtn').style.display = 'none';
+        alert("🎉 CJ Fund App Installed Successfully!");
+    });
+
+    // ---------------- FIREBASE CONFIGURATION LINKED ----------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyCN0v4C4muIGRLhtVRNWc90-5nLtsePeos",
+        authDomain: "cj-fund-manager-c074d.firebaseapp.com",
+        projectId: "cj-fund-manager-c074d",
+        storageBucket: "cj-fund-manager-c074d.appspot.com",
+        messagingSenderId: "208915246059",
+        appId: "1:208915246059:web:6d79661b4f002740dac7ae"
+    };
+    
+    let db = null;
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+    }
+
+    // Official Friends Contact Directory
+    const userPhones = {
+        "Jaisal": "+91 96337 13902",
+        "Hasain": "+91 95629 62147",
+        "Shamsu": "+91 90374 99954",
+        "Sameer": "+91 96330 66667",
+        "Ismail": "+91 95620 66667",
+        "Haris": "+91 98950 76221",
+        "Luqman": "+91 97479 23762",
+        "Saloob": "+91 96057 15674"
+    };
+
+    const SYSTEM_ADMIN_USER = "Jaisal";
+
+    let liveTransactionsList = [];
+    let activeUserDues = [];
+    let livePaidMembers = [];
+    let livePendingMembers = [];
+    let currentLoggedInUser = "";
+
+    function checkUserSelection() {
+        const selectedUser = document.getElementById('username').value;
+        const resetBtn = document.getElementById('resetBtn');
+        
+        if (selectedUser !== "" && selectedUser !== SYSTEM_ADMIN_USER) {
+            resetBtn.style.display = 'inline-block';
+        } else {
+            resetBtn.style.display = 'none';
+        }
+    }
+
+    // ---------------- PASSWORD VALIDATION LOGIC ----------------
+    function handleLogin() {
+        const selectedUser = document.getElementById('username').value;
+        const pass = document.getElementById('password').value.trim();
+
+        if(selectedUser === "") {
+            alert("Please select your name from the list!");
+            return;
+        }
+
+        currentLoggedInUser = selectedUser;
+
+        const storageKey = "userPassword_" + selectedUser;
+        let savedPassword = localStorage.getItem(storageKey);
+
+        if (!savedPassword) {
+            if (pass === "1234") {
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('installBtn').style.display = 'none';
+                document.getElementById('passwordChangePage').style.display = 'block';
+                return;
+            } else if (pass === "") {
+                alert("Please enter a password!");
+                return;
+            } else {
+                alert("Wrong Password! Use default '1234' for first-time login.");
+                return;
+            }
+        }
+
+        if (pass === savedPassword) {
+            localStorage.setItem("deviceOwner_" + selectedUser, "verified");
+            loginToDashboard(selectedUser);
+        } else {
+            alert("Wrong Password!");
+        }
+    }
+
+    function updatePassword() {
+        const newPass = document.getElementById('newPassword').value.trim();
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+
+        if (newPass === "" || confirmPass === "") {
+            alert("Fields cannot be empty!");
+            return;
+        }
+        if (newPass === "1234") {
+            alert("You cannot use default '1234'. Choose a different one.");
+            return;
+        }
+        if (newPass !== confirmPass) {
+            alert("Passwords do not match!");
+            return;
+        }
+
+        const storageKey = "userPassword_" + currentLoggedInUser;
+        localStorage.setItem(storageKey, newPass);
+        localStorage.setItem("deviceOwner_" + currentLoggedInUser, "verified");
+
+        alert("Password updated successfully!");
+        document.getElementById('passwordChangePage').style.display = 'none';
+        loginToDashboard(currentLoggedInUser);
+    }
+
+    // ---------------- SAME PHONE - EASY RESET ENGINE ----------------
+    function triggerPasswordReset() {
+        const selectedUser = document.getElementById('username').value;
+        if(selectedUser === "" || selectedUser === SYSTEM_ADMIN_USER) return;
+
+        const enteredPhone = prompt(`Enter the registered mobile number for ${selectedUser}:`);
+        if (!enteredPhone) return;
+
+        const officialPhoneRaw = userPhones[selectedUser]?.replace(/[^0-9]/g, ""); 
+        const enteredPhoneRaw = enteredPhone.replace(/[^0-9]/g, "");
+
+        if (enteredPhoneRaw !== officialPhoneRaw) {
+            alert("❌ Incorrect Mobile Number! Authentication Failed.");
+            return;
+        }
+
+        const isVerifiedOwner = localStorage.getItem("deviceOwner_" + selectedUser);
+
+        if (isVerifiedOwner === "verified") {
+            alert("✅ Device Verified! You can now reset your password directly.");
+            document.getElementById('securityPageTitle').innerText = "Reset Your Password";
+            document.getElementById('securityPageDesc').innerText = "Please enter your new secret password below.";
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('installBtn').style.display = 'none';
+            document.getElementById('passwordChangePage').style.display = 'block';
+        } else {
+            alert("❌ Security Alert! This device is not recognized for this user.\n\nസുരക്ഷ മുൻനിർത്തി പുതിയ ഡിവൈസുകളിൽ നിന്നുള്ള ഡയറക്ട് റീസെറ്റ് അനുവദിക്കില്ല.");
+            document.getElementById('password').value = "";
+        }
+    }
+
+    function loginToDashboard(user) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('installBtn').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        
+        document.getElementById('userWelcome').innerText = user;
+        document.getElementById('userPhone').innerText = `📞 ${userPhones[user] || '+91 00000 00000'}`;
+        
+        if(user === SYSTEM_ADMIN_USER) {
+            document.getElementById('adminBadge').style.display = 'inline-block';
+        } else {
+            document.getElementById('adminBadge').style.display = 'none';
+        }
+
+        if(db) {
+            fetchLiveDatabaseContent(user);
+        } else {
+            loadLocalProductionState(user);
+        }
+    }
+
+    function fetchLiveDatabaseContent(user) {
+        loadLocalProductionState(user);
+    }
+
+    function loadLocalProductionState(user) {
+        document.getElementById('totalBalanceView').innerText = "₹400";
+
+        liveTransactionsList = [
+            { date: '2026-07-31', name: 'July Fund Balance', type: 'Credit', desc: 'July Month Closing Balance', status: 'Paid', amount: 400 }
+        ];
+
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonthIndex = today.getMonth(); 
+
+        if (currentYear > 2026 || (currentYear === 2026 && currentMonthIndex >= 7)) {
+            const localDuesMap = {
+                "Haris": [{ month: "August", amount: 500 }],
+                "Hasain": [{ month: "August", amount: 500 }],
+                "Ismail": [{ month: "August", amount: 500 }],
+                "Jaisal": [{ month: "August", amount: 500 }],
+                "Luqman": [{ month: "August", amount: 500 }],
+                "Saloob": [{ month: "August", amount: 500 }],
+                "Sameer": [{ month: "August", amount: 500 }],
+                "Shamsu": [{ month: "August", amount: 500 }]
+            };
+            activeUserDues = localDuesMap[user] || [];
+            livePaidMembers = [];
+            livePendingMembers = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
+        } else {
+            activeUserDues = [];
+            livePaidMembers = [];
+            livePendingMembers = [];
+        }
+
+        updatePaymentStatusPanel(user);
+        renderPaidPendingTrackers();
+        renderTable(liveTransactionsList);
+        setupStatementFilters();
+    }
+
+    function updatePaymentStatusPanel(user) {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        
+        const statusBox = document.getElementById('statusBox');
+        const statusSignal = document.getElementById('statusSignal');
+        const statusText = document.getElementById('statusText');
+        const payBtn = document.getElementById('payNowBtn');
+
+        if (activeUserDues.length === 0) {
+            statusBox.className = "status-box paid";
+            statusSignal.className = "signal green";
+            
+            if (currentYear === 2026 && today.getMonth() < 7) {
+                document.getElementById('monthTrackerTitle').innerText = `July 2026 Tracker`;
+                statusText.innerText = "Official collection cycle starts in August!";
+            } else {
+                document.getElementById('monthTrackerTitle').innerText = `August 2026 Tracker`;
+                statusText.innerText = `Your payment done for August`;
+            }
+            payBtn.style.display = 'none';
+        } else {
+            document.getElementById('monthTrackerTitle').innerText = `August 2026 Tracker`;
+            let totalDue = 0;
+            let dueMonths = [];
+            
+            activeUserDues.forEach(d => {
+                totalDue += d.amount;
+                dueMonths.push(d.month);
+            });
+            
+            const monthsString = dueMonths.join(", ");
+            statusBox.className = "status-box due";
+            statusSignal.className = "signal red";
+            
+            statusText.innerHTML = `${monthsString} ${dueMonths.length > 1 ? 'months' : 'month'} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
+            payBtn.style.display = 'inline-block';
+            
+            document.getElementById('upiPayLink').href = `upi://pay?pa=your-upi-id@oksbi&pn=CJ%20Fund&am=${totalDue}.00&cu=INR&tn=${user}%20CJ%20Fund%20Dues`;
+        }
+    }
+
+    function renderPaidPendingTrackers() {
+        const paidContainer = document.getElementById('paidBadgeList');
+        const pendingContainer = document.getElementById('pendingBadgeList');
+        
+        document.getElementById('paidCountText').innerText = `Paid (${livePaidMembers.length})`;
+        document.getElementById('pendingCountText').innerText = `Pending (${livePendingMembers.length})`;
+
+        paidContainer.innerHTML = "";
+        pendingContainer.innerHTML = "";
+
+        livePaidMembers.forEach(name => {
+            paidContainer.innerHTML += `<span class="badge paid">✓ ${name}</span>`;
+        });
+
+        livePendingMembers.forEach(name => {
+            pendingContainer.innerHTML += `<span class="badge pending">⏳ ${name}</span>`;
+        });
+    }
+
+    function showPaymentForm() {
+        document.getElementById('paymentForm').style.display = 'block';
+        document.getElementById('payNowBtn').style.display = 'none';
+    }
+
+    function submitTransaction() {
+        const txnId = document.getElementById('txnId').value.trim();
+        if(txnId === "" || txnId.length < 6) {
+            alert("Please enter a valid Transaction ID!");
+            return;
+        }
+        
+        if(db) {
+            db.collection("deposits").add({
+                user: currentLoggedInUser,
+                transactionId: txnId,
+                date: new Date().toISOString().split('T')[0],
+                status: "Pending Verification"
+            }).then(() => {
+                alert("Submitted! Signal will turn green after admin approval.");
+                document.getElementById('paymentForm').style.display = 'none';
+            });
+        } else {
+            alert("Transaction code submitted locally!");
+            document.getElementById('paymentForm').style.display = 'none';
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('statementBody');
+        tbody.innerHTML = "";
+
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #999;">No transaction logs available.</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            const formattedDate = item.date.split('-').reverse().join('-');
+            
+            let displayAmountOrStatus = "";
+            
+            if(item.status === 'Due') {
+                displayAmountOrStatus = `<span class="text-red">Due (₹${item.amount})</span>`;
+            } else {
+                const amountClass = item.type === 'Credit' ? 'text-green' : 'text-red';
+                const amountSign = item.type === 'Credit' ? `+₹${item.amount}` : `-₹${item.amount}`;
+                displayAmountOrStatus = `<span class="${amountClass}">${amountSign}</span>`;
+            }
+
+            row.innerHTML = `
+                <td>${formattedDate}</td>
+                <td><b>${item.name}</b></td>
+                <td>${item.desc}</td>
+                <td>${displayAmountOrStatus}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Dropdown filters
+    function setupStatementFilters() {
+        const select = document.getElementById('monthFilter');
+        const options = ["July 2026", "August 2026"];
+        
+        options.forEach(optVal => {
+            if(!select.querySelector(`option[value="${optVal}"]`)) {
+                const option = document.createElement('option');
+                option.value = optVal;
+                option.innerText = optVal;
+                select.appendChild(option);
+            }
+        });
+    }
+
+    function downloadPDFStatement() {
+        const element = document.getElementById('printableStatementArea');
+        const titleText = document.getElementById('pdfReportTitle');
+        
+        titleText.style.display = 'block';
+        titleText.innerText = `CJ Fund Official Statement Report`;
+
+        const opt = {
+            margin:       10,
+            filename:     `CJ_Fund_Statement_Export.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            titleText.style.display = 'none';
+        });
+    }
+
+    function filterByMonth() {
+        const selected = document.getElementById('monthFilter').value;
+        if(selected === 'all') { renderTable(liveTransactionsList); return; }
+        
+        const filtered = liveTransactionsList.filter(item => {
+            const itemDate = new Date(item.date);
+            const monthName = itemDate.toLocaleString('default', { month: 'long' }) + " " + itemDate.getFullYear();
+            return monthName.toLowerCase() === selected.toLowerCase();
+        });
+        renderTable(filtered);
+    }
+
+    function filterByCustomDate() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        if(!fromDate || !toDate) { alert("Please select both dates!"); return; }
+        
+        const filtered = liveTransactionsList.filter(item => item.date >= fromDate && item.date <= toDate);
+        renderTable(filtered);
+    }
+
+    function logout() {
+        currentLoggedInUser = "";
+        document.getElementById('username').value = "";
+        document.getElementById('password').value = "";
+        if(document.getElementById('newPassword')) document.getElementById('newPassword').value = "";
+        if(document.getElementById('confirmPassword')) document.getElementById('confirmPassword').value = "";
+        document.getElementById('appContent').style.display = 'none';
+        document.getElementById('passwordChangePage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'block';
+        if (deferredPrompt) {
+            document.getElementById('installBtn').style.display = 'block';
+        }
+        checkUserSelection();
+    }
+</script>
+</body>
+</html>
+2
