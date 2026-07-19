@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CJ fund</title>
     
-    <!-- 1. DATA URI MANIFEST (തനിയെ ഇൻസ്റ്റാൾ ആകാൻ സഹായിക്കുന്നു) -->
+    <!-- 1. DATA URI MANIFEST -->
     <link rel="manifest" href="data:application/manifest+json,%7B%22short_name%22%3A%22CJ%20Fund%22%2C%22name%22%3A%22CJ%20Friends%20Emergency%20Fund%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F2489%2F2489756.png%22%2C%22type%22%3A%22image%2Fpng%22%2C%22sizes%22%3A%22512x512%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22background_color%22%3A%22%231e0b36%22%2C%22theme_color%22%3A%22%233b1563%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%7D">
     <meta name="theme-color" content="#3b1563">
 
@@ -123,19 +123,6 @@
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 0, 127, 0.5);
-        }
-
-        .link-btn {
-            background: none;
-            color: #ffd700;
-            border: none;
-            font-size: 14px;
-            margin-top: 15px;
-            cursor: pointer;
-            text-decoration: underline;
-            width: auto;
-            display: inline-block;
-            padding: 0;
         }
 
         /* ---------------- Force Password Change Screen ---------------- */
@@ -372,7 +359,7 @@
 </head>
 <body>
 
-<!-- 📱 INSTALL APP BUTTON BANNER (ക്രോം സപ്പോർട്ട് ഉള്ള ഫോണുകളിൽ കാണിക്കും) -->
+<!-- 📱 INSTALL APP BUTTON BANNER -->
 <button class="install-banner" id="installBtn" onclick="triggerAppInstallation()">
     📲 Install CJ Fund Official App
 </button>
@@ -384,7 +371,7 @@
     
     <div class="input-group">
         <label for="username">Choose Your Name</label>
-        <select id="username" onchange="checkUserSelection()">
+        <select id="username">
             <option value="">Select Your Name</option>
             <option value="Haris">Haris</option>
             <option value="Hasain">Hasain</option>
@@ -403,7 +390,6 @@
     </div>
     
     <button class="btn-primary" onclick="handleLogin()">Login</button>
-    <center><button class="link-btn" id="resetBtn" onclick="triggerPasswordReset()" style="display:none;">Forgot Password?</button></center>
 </div>
 
 <!-- 2. Force Change Password Screen -->
@@ -521,7 +507,6 @@
 
 <script>
     // ---------------- INLINE SERVICE WORKER GENERATION ----------------
-    // മറ്റൊരു ഫയലിന്റെ സഹായമില്ലാതെ ഈ പേജിനെ PWA ആക്കാൻ സഹായിക്കുന്നു.
     if ('serviceWorker' in navigator) {
         const swBlob = new Blob([`
             const CACHE_NAME = 'cj-fund-v2';
@@ -541,7 +526,6 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        // ലോഗിൻ പേജിൽ ഇൻസ്റ്റാൾ ബട്ടൺ കാണിക്കുന്നു
         if(document.getElementById('loginPage').style.display !== 'none') {
             document.getElementById('installBtn').style.display = 'block';
         }
@@ -552,7 +536,6 @@
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
-                console.log('User installed the app');
                 document.getElementById('installBtn').style.display = 'none';
             }
             deferredPrompt = null;
@@ -564,23 +547,21 @@
         alert("🎉 CJ Fund App Installed Successfully!");
     });
 
-    // ---------------- FIREBASE CONFIGURATION LINKED ----------------
+    // ---------------- UPDATED FIREBASE CONFIGURATION (PHOTOGRAPHED) ----------------
     const firebaseConfig = {
-        apiKey: "AIzaSyCN0v4C4muIGRLhtVRNWc90-5nLtsePeos",
-        authDomain: "cj-fund-manager-c074d.firebaseapp.com",
-        projectId: "cj-fund-manager-c074d",
-        storageBucket: "cj-fund-manager-c074d.appspot.com",
-        messagingSenderId: "208915246059",
-        appId: "1:208915246059:web:6d79661b4f002740dac7ae"
+        apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ",
+        authDomain: "cj-fund-manager.firebaseapp.com",
+        projectId: "cj-fund-manager",
+        storageBucket: "cj-fund-manager.firebasestorage.app",
+        messagingSenderId: "786565291388",
+        appId: "1:786565291388:web:e06abab3ce51a8d2b198f9",
+        measurementId: "G-M8V10NRH53"
     };
     
-    let db = null;
-    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // Official Friends Contact Directory
+    // Contact Directory
     const userPhones = {
         "Jaisal": "+91 96337 13902",
         "Hasain": "+91 95629 62147",
@@ -593,25 +574,11 @@
     };
 
     const SYSTEM_ADMIN_USER = "Jaisal";
-
+    let currentLoggedInUser = "";
     let liveTransactionsList = [];
     let activeUserDues = [];
-    let livePaidMembers = [];
-    let livePendingMembers = [];
-    let currentLoggedInUser = "";
 
-    function checkUserSelection() {
-        const selectedUser = document.getElementById('username').value;
-        const resetBtn = document.getElementById('resetBtn');
-        
-        if (selectedUser !== "" && selectedUser !== SYSTEM_ADMIN_USER) {
-            resetBtn.style.display = 'inline-block';
-        } else {
-            resetBtn.style.display = 'none';
-        }
-    }
-
-    // ---------------- PASSWORD VALIDATION LOGIC ----------------
+    // ---------------- DATABASE PERSISTENT AUTHENTICATION ----------------
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -620,33 +587,35 @@
             alert("Please select your name from the list!");
             return;
         }
+        if (pass === "") {
+            alert("Please enter your password!");
+            return;
+        }
 
         currentLoggedInUser = selectedUser;
 
-        const storageKey = "userPassword_" + selectedUser;
-        let savedPassword = localStorage.getItem(storageKey);
-
-        if (!savedPassword) {
-            if (pass === "1234") {
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('installBtn').style.display = 'none';
-                document.getElementById('passwordChangePage').style.display = 'block';
-                return;
-            } else if (pass === "") {
-                alert("Please enter a password!");
-                return;
+        // ഫയർബേസ് ഡാറ്റാബേസിൽ പോയി ഈ യൂസറുടെ പാസ്‌വേഡ് ചെക്ക് ചെയ്യുന്നു
+        db.collection("users").doc(selectedUser).get().then((doc) => {
+            if (doc.exists) {
+                const cloudPassword = doc.data().password;
+                if (pass === cloudPassword) {
+                    loginToDashboard(selectedUser);
+                } else {
+                    alert("Wrong Password!");
+                }
             } else {
-                alert("Wrong Password! Use default '1234' for first-time login.");
-                return;
+                // ഡാറ്റാബേസിൽ ആദ്യമായിട്ടാണ് കയറുന്നതെങ്കിൽ ഡിഫോൾട്ട് പാസ്‌വേഡ് 1234 ആണോ എന്ന് നോക്കും
+                if (pass === "1234") {
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('passwordChangePage').style.display = 'block';
+                } else {
+                    alert("Wrong Password! Use default '1234' for your first-time login.");
+                }
             }
-        }
-
-        if (pass === savedPassword) {
-            localStorage.setItem("deviceOwner_" + selectedUser, "verified");
-            loginToDashboard(selectedUser);
-        } else {
-            alert("Wrong Password!");
-        }
+        }).catch((error) => {
+            console.error("Authentication Error: ", error);
+            alert("Database offline or configuration issue!");
+        });
     }
 
     function updatePassword() {
@@ -666,49 +635,20 @@
             return;
         }
 
-        const storageKey = "userPassword_" + currentLoggedInUser;
-        localStorage.setItem(storageKey, newPass);
-        localStorage.setItem("deviceOwner_" + currentLoggedInUser, "verified");
-
-        alert("Password updated successfully!");
-        document.getElementById('passwordChangePage').style.display = 'none';
-        loginToDashboard(currentLoggedInUser);
-    }
-
-    // ---------------- SAME PHONE - EASY RESET ENGINE ----------------
-    function triggerPasswordReset() {
-        const selectedUser = document.getElementById('username').value;
-        if(selectedUser === "" || selectedUser === SYSTEM_ADMIN_USER) return;
-
-        const enteredPhone = prompt(`Enter the registered mobile number for ${selectedUser}:`);
-        if (!enteredPhone) return;
-
-        const officialPhoneRaw = userPhones[selectedUser]?.replace(/[^0-9]/g, ""); 
-        const enteredPhoneRaw = enteredPhone.replace(/[^0-9]/g, "");
-
-        if (enteredPhoneRaw !== officialPhoneRaw) {
-            alert("❌ Incorrect Mobile Number! Authentication Failed.");
-            return;
-        }
-
-        const isVerifiedOwner = localStorage.getItem("deviceOwner_" + selectedUser);
-
-        if (isVerifiedOwner === "verified") {
-            alert("✅ Device Verified! You can now reset your password directly.");
-            document.getElementById('securityPageTitle').innerText = "Reset Your Password";
-            document.getElementById('securityPageDesc').innerText = "Please enter your new secret password below.";
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('installBtn').style.display = 'none';
-            document.getElementById('passwordChangePage').style.display = 'block';
-        } else {
-            alert("❌ Security Alert! This device is not recognized for this user.\n\nസുരക്ഷ മുൻനിർത്തി പുതിയ ഡിവൈസുകളിൽ നിന്നുള്ള ഡയറക്ട് റീസെറ്റ് അനുവദിക്കില്ല.");
-            document.getElementById('password').value = "";
-        }
+        // പുതിയ പാസ്‌വേഡ് നേരിട്ട് ഫയർബേസിലേക്ക് സേവ് ചെയ്യുന്നു
+        db.collection("users").doc(currentLoggedInUser).set({
+            password: newPass
+        }, { merge: true }).then(() => {
+            alert("Password updated securely in Cloud Database!");
+            document.getElementById('passwordChangePage').style.display = 'none';
+            loginToDashboard(currentLoggedInUser);
+        }).catch((error) => {
+            alert("Failed to save password to database: " + error);
+        });
     }
 
     function loginToDashboard(user) {
         document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('installBtn').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         
         document.getElementById('userWelcome').innerText = user;
@@ -720,77 +660,71 @@
             document.getElementById('adminBadge').style.display = 'none';
         }
 
-        if(db) {
-            fetchLiveDatabaseContent(user);
-        } else {
-            loadLocalProductionState(user);
-        }
+        fetchLiveDatabaseContent(user);
     }
 
+    // ---------------- FETCH REALTIME DATA FROM FIRESTORE ----------------
     function fetchLiveDatabaseContent(user) {
-        loadLocalProductionState(user);
-    }
+        // 1. ഫണ്ട് ടോട്ടൽ ബാലൻസ് എടുക്കുന്നു
+        db.collection("metadata").doc("fundSummary").onSnapshot((doc) => {
+            if(doc.exists) {
+                document.getElementById('totalBalanceView').innerText = `₹${doc.data().totalBalance || 0}`;
+            } else {
+                document.getElementById('totalBalanceView').innerText = "₹400"; 
+            }
+        });
 
-    function loadLocalProductionState(user) {
-        document.getElementById('totalBalanceView').innerText = "₹400";
+        // 2. ട്രാൻസാക്ഷൻ ഹിസ്റ്ററി ലോഡ് ചെയ്യുന്നു
+        db.collection("transactions").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+            liveTransactionsList = [];
+            querySnapshot.forEach((doc) => {
+                liveTransactionsList.push(doc.data());
+            });
+            if(liveTransactionsList.length === 0) {
+                liveTransactionsList = [{ date: '2026-07-31', name: 'July Fund Balance', type: 'Credit', desc: 'July Month Closing Balance', status: 'Paid', amount: 400 }];
+            }
+            renderTable(liveTransactionsList);
+        });
 
-        liveTransactionsList = [
-            { date: '2026-07-31', name: 'July Fund Balance', type: 'Credit', desc: 'July Month Closing Balance', status: 'Paid', amount: 400 }
-        ];
+        // 3. കറന്റ് യൂസറുടെ കുടിശ്ശിക (Dues) വിവരങ്ങൾ ഫെച്ച് ചെയ്യുന്നു
+        db.collection("dues").doc(user).onSnapshot((doc) => {
+            if(doc.exists) {
+                activeUserDues = doc.data().months || [];
+            } else {
+                activeUserDues = [{ month: "August", amount: 500 }]; // Default allocation structure
+            }
+            updatePaymentStatusPanel(user);
+        });
 
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonthIndex = today.getMonth(); 
+        // 4. മന്ത്ലി ട്രാക്കർ വിവരങ്ങൾ എടുക്കുന്നു (Paid / Pending badges)
+        db.collection("trackers").doc("August2026").onSnapshot((doc) => {
+            let paidMembers = [];
+            let pendingMembers = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
+            
+            if(doc.exists) {
+                paidMembers = doc.data().paid || [];
+                pendingMembers = doc.data().pending || pendingMembers;
+            }
+            renderPaidPendingTrackers(paidMembers, pendingMembers);
+        });
 
-        if (currentYear > 2026 || (currentYear === 2026 && currentMonthIndex >= 7)) {
-            const localDuesMap = {
-                "Haris": [{ month: "August", amount: 500 }],
-                "Hasain": [{ month: "August", amount: 500 }],
-                "Ismail": [{ month: "August", amount: 500 }],
-                "Jaisal": [{ month: "August", amount: 500 }],
-                "Luqman": [{ month: "August", amount: 500 }],
-                "Saloob": [{ month: "August", amount: 500 }],
-                "Sameer": [{ month: "August", amount: 500 }],
-                "Shamsu": [{ month: "August", amount: 500 }]
-            };
-            activeUserDues = localDuesMap[user] || [];
-            livePaidMembers = [];
-            livePendingMembers = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
-        } else {
-            activeUserDues = [];
-            livePaidMembers = [];
-            livePendingMembers = [];
-        }
-
-        updatePaymentStatusPanel(user);
-        renderPaidPendingTrackers();
-        renderTable(liveTransactionsList);
         setupStatementFilters();
     }
 
     function updatePaymentStatusPanel(user) {
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        
         const statusBox = document.getElementById('statusBox');
         const statusSignal = document.getElementById('statusSignal');
         const statusText = document.getElementById('statusText');
         const payBtn = document.getElementById('payNowBtn');
 
+        document.getElementById('monthTrackerTitle').innerText = `August 2026 Tracker`;
+
         if (activeUserDues.length === 0) {
             statusBox.className = "status-box paid";
             statusSignal.className = "signal green";
-            
-            if (currentYear === 2026 && today.getMonth() < 7) {
-                document.getElementById('monthTrackerTitle').innerText = `July 2026 Tracker`;
-                statusText.innerText = "Official collection cycle starts in August!";
-            } else {
-                document.getElementById('monthTrackerTitle').innerText = `August 2026 Tracker`;
-                statusText.innerText = `Your payment done for August`;
-            }
+            statusText.innerText = `Your payment done for August`;
             payBtn.style.display = 'none';
         } else {
-            document.getElementById('monthTrackerTitle').innerText = `August 2026 Tracker`;
             let totalDue = 0;
             let dueMonths = [];
             
@@ -803,28 +737,29 @@
             statusBox.className = "status-box due";
             statusSignal.className = "signal red";
             
-            statusText.innerHTML = `${monthsString} ${dueMonths.length > 1 ? 'months' : 'month'} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
+            statusText.innerHTML = `${monthsString} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
             payBtn.style.display = 'inline-block';
             
+            // UPI Payment Deep-linking
             document.getElementById('upiPayLink').href = `upi://pay?pa=your-upi-id@oksbi&pn=CJ%20Fund&am=${totalDue}.00&cu=INR&tn=${user}%20CJ%20Fund%20Dues`;
         }
     }
 
-    function renderPaidPendingTrackers() {
+    function renderPaidPendingTrackers(paid, pending) {
         const paidContainer = document.getElementById('paidBadgeList');
         const pendingContainer = document.getElementById('pendingBadgeList');
         
-        document.getElementById('paidCountText').innerText = `Paid (${livePaidMembers.length})`;
-        document.getElementById('pendingCountText').innerText = `Pending (${livePendingMembers.length})`;
+        document.getElementById('paidCountText').innerText = `Paid (${paid.length})`;
+        document.getElementById('pendingCountText').innerText = `Pending (${pending.length})`;
 
         paidContainer.innerHTML = "";
         pendingContainer.innerHTML = "";
 
-        livePaidMembers.forEach(name => {
+        paid.forEach(name => {
             paidContainer.innerHTML += `<span class="badge paid">✓ ${name}</span>`;
         });
 
-        livePendingMembers.forEach(name => {
+        pending.forEach(name => {
             pendingContainer.innerHTML += `<span class="badge pending">⏳ ${name}</span>`;
         });
     }
@@ -841,20 +776,16 @@
             return;
         }
         
-        if(db) {
-            db.collection("deposits").add({
-                user: currentLoggedInUser,
-                transactionId: txnId,
-                date: new Date().toISOString().split('T')[0],
-                status: "Pending Verification"
-            }).then(() => {
-                alert("Submitted! Signal will turn green after admin approval.");
-                document.getElementById('paymentForm').style.display = 'none';
-            });
-        } else {
-            alert("Transaction code submitted locally!");
+        db.collection("deposits").add({
+            user: currentLoggedInUser,
+            transactionId: txnId,
+            date: new Date().toISOString().split('T')[0],
+            status: "Pending Verification"
+        }).then(() => {
+            alert("Submitted! Signal will turn green after admin approval.");
             document.getElementById('paymentForm').style.display = 'none';
-        }
+            document.getElementById('txnId').value = "";
+        }).catch(err => alert("Error submitting: " + err));
     }
 
     function renderTable(data) {
@@ -871,7 +802,6 @@
             const formattedDate = item.date.split('-').reverse().join('-');
             
             let displayAmountOrStatus = "";
-            
             if(item.status === 'Due') {
                 displayAmountOrStatus = `<span class="text-red">Due (₹${item.amount})</span>`;
             } else {
@@ -890,7 +820,6 @@
         });
     }
 
-    // Dropdown filters
     function setupStatementFilters() {
         const select = document.getElementById('monthFilter');
         const options = ["July 2026", "August 2026"];
@@ -902,26 +831,6 @@
                 option.innerText = optVal;
                 select.appendChild(option);
             }
-        });
-    }
-
-    function downloadPDFStatement() {
-        const element = document.getElementById('printableStatementArea');
-        const titleText = document.getElementById('pdfReportTitle');
-        
-        titleText.style.display = 'block';
-        titleText.innerText = `CJ Fund Official Statement Report`;
-
-        const opt = {
-            margin:       10,
-            filename:     `CJ_Fund_Statement_Export.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(element).save().then(() => {
-            titleText.style.display = 'none';
         });
     }
 
@@ -946,6 +855,26 @@
         renderTable(filtered);
     }
 
+    function downloadPDFStatement() {
+        const element = document.getElementById('printableStatementArea');
+        const titleText = document.getElementById('pdfReportTitle');
+        
+        titleText.style.display = 'block';
+        titleText.innerText = `CJ Fund Official Statement Report`;
+
+        const opt = {
+            margin:       10,
+            filename:     `CJ_Fund_Statement_Export.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            titleText.style.display = 'none';
+        });
+    }
+
     function logout() {
         currentLoggedInUser = "";
         document.getElementById('username').value = "";
@@ -955,12 +884,7 @@
         document.getElementById('appContent').style.display = 'none';
         document.getElementById('passwordChangePage').style.display = 'none';
         document.getElementById('loginPage').style.display = 'block';
-        if (deferredPrompt) {
-            document.getElementById('installBtn').style.display = 'block';
-        }
-        checkUserSelection();
     }
 </script>
 </body>
 </html>
-2
