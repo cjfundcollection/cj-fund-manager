@@ -547,7 +547,7 @@
         alert("🎉 CJ Fund App Installed Successfully!");
     });
 
-    // ---------------- UPDATED FIREBASE CONFIGURATION (PHOTOGRAPHED) ----------------
+    // ---------------- UPDATED FIREBASE CONFIGURATION ----------------
     const firebaseConfig = {
         apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ",
         authDomain: "cj-fund-manager.firebaseapp.com",
@@ -561,7 +561,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Contact Directory
     const userPhones = {
         "Jaisal": "+91 96337 13902",
         "Hasain": "+91 95629 62147",
@@ -577,6 +576,7 @@
     let currentLoggedInUser = "";
     let liveTransactionsList = [];
     let activeUserDues = [];
+    let allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
 
     // ---------------- DATABASE PERSISTENT AUTHENTICATION ----------------
     function handleLogin() {
@@ -594,7 +594,6 @@
 
         currentLoggedInUser = selectedUser;
 
-        // ഫയർബേസ് ഡാറ്റാബേസിൽ പോയി ഈ യൂസറുടെ പാസ്‌വേഡ് ചെക്ക് ചെയ്യുന്നു
         db.collection("users").doc(selectedUser).get().then((doc) => {
             if (doc.exists) {
                 const cloudPassword = doc.data().password;
@@ -604,7 +603,6 @@
                     alert("Wrong Password!");
                 }
             } else {
-                // ഡാറ്റാബേസിൽ ആദ്യമായിട്ടാണ് കയറുന്നതെങ്കിൽ ഡിഫോൾട്ട് പാസ്‌വേഡ് 1234 ആണോ എന്ന് നോക്കും
                 if (pass === "1234") {
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('passwordChangePage').style.display = 'block';
@@ -613,7 +611,6 @@
                 }
             }
         }).catch((error) => {
-            console.error("Authentication Error: ", error);
             alert("Database offline or configuration issue!");
         });
     }
@@ -635,7 +632,6 @@
             return;
         }
 
-        // പുതിയ പാസ്‌വേഡ് നേരിട്ട് ഫയർബേസിലേക്ക് സേവ് ചെയ്യുന്നു
         db.collection("users").doc(currentLoggedInUser).set({
             password: newPass
         }, { merge: true }).then(() => {
@@ -656,16 +652,115 @@
         
         if(user === SYSTEM_ADMIN_USER) {
             document.getElementById('adminBadge').style.display = 'inline-block';
+            injectAdminPanelUI();
         } else {
             document.getElementById('adminBadge').style.display = 'none';
+            const existingPanel = document.getElementById('adminControlPanelCard');
+            if(existingPanel) existingPanel.remove();
         }
 
         fetchLiveDatabaseContent(user);
     }
 
+    // ---------------- DYNAMIC ADMIN PANEL INJECTION ----------------
+    function injectAdminPanelUI() {
+        if(document.getElementById('adminControlPanelCard')) return;
+
+        const adminCard = document.createElement('div');
+        adminCard.className = 'container';
+        adminCard.id = 'adminControlPanelCard';
+        adminCard.style.border = '2px solid #ffd700';
+        adminCard.style.background = '#fffdf0';
+
+        let memberOptions = `<option value="">Select Member</option>`;
+        allMembersList.forEach(m => {
+            memberOptions += `<option value="${m}">${m}</option>`;
+        });
+
+        adminCard.innerHTML = `
+            <h3 style="color: #3b1563; margin-top:0;">👑 Admin Control Panel</h3>
+            <p style="font-size:13px; color:#555; margin-bottom:15px;">നേരിട്ട് പണം വാങ്ങിയാൽ അഡ്മിന് ഇവിടെ വെച്ച് കൺഫേം ചെയ്യാം.</p>
+            
+            <div class="input-group">
+                <label style="color:#333; font-weight:bold;">Select Member Name:</label>
+                <select id="adminTargetUser" style="color:#333; background:#fff; border:1px solid #ccc;">
+                    ${memberOptions}
+                </select>
+            </div>
+            
+            <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">
+                Mark as Paid (Clear Due)
+            </button>
+        `;
+        
+        const appContentDiv = document.getElementById('appContent');
+        appContentDiv.insertBefore(adminCard, appContentDiv.lastElementChild);
+    }
+
+    // ---------------- ADMIN ACTION: CLEAR DUE DIRECTLY ----------------
+    function adminClearUserDue() {
+        const targetUser = document.getElementById('adminTargetUser').value;
+        if(!targetUser) {
+            alert("Please select a member first!");
+            return;
+        }
+
+        if(!confirm(`Are you sure you want to mark ${targetUser} as PAID for August 2026?`)) return;
+
+        db.collection("dues").doc(targetUser).set({
+            months: []
+        }).then(() => {
+            const trackerRef = db.collection("trackers").doc("August2026");
+            
+            return db.runTransaction((transaction) => {
+                return transaction.get(trackerRef).then((sfDoc) => {
+                    let paidArr = [];
+                    let pendingArr = [...allMembersList];
+
+                    if (sfDoc.exists) {
+                        paidArr = sfDoc.data().paid || [];
+                        pendingArr = sfDoc.data().pending || allMembersList;
+                    }
+
+                    if (!paidArr.includes(targetUser)) paidArr.push(targetUser);
+                    pendingArr = pendingArr.filter(name => name !== targetUser);
+
+                    transaction.set(trackerRef, {
+                        paid: paidArr,
+                        pending: pendingArr
+                    }, { merge: true });
+                });
+            });
+        }).then(() => {
+            return db.collection("transactions").add({
+                date: new Date().toISOString().split('T')[0],
+                name: targetUser,
+                desc: "August Fund - Paid to Admin directly",
+                type: "Credit",
+                status: "Paid",
+                amount: 500
+            });
+        }).then(() => {
+            const summaryRef = db.collection("metadata").doc("fundSummary");
+            return db.runTransaction((transaction) => {
+                return transaction.get(summaryRef).then((summaryDoc) => {
+                    let currentTotal = 400;
+                    if(summaryDoc.exists) {
+                        currentTotal = summaryDoc.data().totalBalance || 400;
+                    }
+                    transaction.set(summaryRef, { totalBalance: currentTotal + 500 }, { merge: true });
+                });
+            });
+        }).then(() => {
+            alert(`✅ Success! ${targetUser}'s due cleared and fund balance updated.`);
+            document.getElementById('adminTargetUser').value = "";
+        }).catch(err => {
+            alert("Error updating database: " + err);
+        });
+    }
+
     // ---------------- FETCH REALTIME DATA FROM FIRESTORE ----------------
     function fetchLiveDatabaseContent(user) {
-        // 1. ഫണ്ട് ടോട്ടൽ ബാലൻസ് എടുക്കുന്നു
         db.collection("metadata").doc("fundSummary").onSnapshot((doc) => {
             if(doc.exists) {
                 document.getElementById('totalBalanceView').innerText = `₹${doc.data().totalBalance || 0}`;
@@ -674,7 +769,6 @@
             }
         });
 
-        // 2. ട്രാൻസാക്ഷൻ ഹിസ്റ്ററി ലോഡ് ചെയ്യുന്നു
         db.collection("transactions").orderBy("date", "desc").onSnapshot((querySnapshot) => {
             liveTransactionsList = [];
             querySnapshot.forEach((doc) => {
@@ -686,20 +780,18 @@
             renderTable(liveTransactionsList);
         });
 
-        // 3. കറന്റ് യൂസറുടെ കുടിശ്ശിക (Dues) വിവരങ്ങൾ ഫെച്ച് ചെയ്യുന്നു
         db.collection("dues").doc(user).onSnapshot((doc) => {
             if(doc.exists) {
                 activeUserDues = doc.data().months || [];
             } else {
-                activeUserDues = [{ month: "August", amount: 500 }]; // Default allocation structure
+                activeUserDues = [{ month: "August", amount: 500 }]; 
             }
             updatePaymentStatusPanel(user);
         });
 
-        // 4. മന്ത്ലി ട്രാക്കർ വിവരങ്ങൾ എടുക്കുന്നു (Paid / Pending badges)
         db.collection("trackers").doc("August2026").onSnapshot((doc) => {
             let paidMembers = [];
-            let pendingMembers = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
+            let pendingMembers = [...allMembersList];
             
             if(doc.exists) {
                 paidMembers = doc.data().paid || [];
@@ -740,7 +832,6 @@
             statusText.innerHTML = `${monthsString} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
             payBtn.style.display = 'inline-block';
             
-            // UPI Payment Deep-linking
             document.getElementById('upiPayLink').href = `upi://pay?pa=your-upi-id@oksbi&pn=CJ%20Fund&am=${totalDue}.00&cu=INR&tn=${user}%20CJ%20Fund%20Dues`;
         }
     }
@@ -764,6 +855,7 @@
         });
     }
 
+    // Toggle View for Payment Field
     function showPaymentForm() {
         document.getElementById('paymentForm').style.display = 'block';
         document.getElementById('payNowBtn').style.display = 'none';
