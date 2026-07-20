@@ -358,7 +358,7 @@
             currentLoggedInUser = sessionUsername; 
             loginToDashboard(sessionUsername); 
 
-            // ⚙️ ONE-TIME AUTO FIX: Jaisal ട്രയൽ ഹിസ്റ്ററി ഒഴിവാക്കി July ക്ലോസിങ് ബാലൻസ് 400 ആക്കാനുള്ള കോഡ്
+            // ⚙️ ONE-TIME AUTO FIX
             if (sessionUsername === "Jaisal") {
                 db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
                     snapshot.forEach((doc) => { doc.ref.delete(); });
@@ -608,6 +608,33 @@
     }
 
     function logout() { localStorage.clear(); location.reload(); }
+
+    // 📲 PWA INSTALL ENGINE FOR EXTERNAL DEVICES
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) installBtn.style.display = 'block';
+    });
+
+    function triggerAppInstallation() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                const installBtn = document.getElementById('installBtn');
+                if (installBtn) installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) installBtn.style.display = 'none';
+        deferredPrompt = null;
+    });
 </script>
 </body>
 </html>
