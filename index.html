@@ -253,7 +253,7 @@
     <button class="btn-primary" onclick="handleLogin()">Login</button>
 </div>
 
-<!-- 2. Force Change Password Screen -->
+<!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
     <h2>Security Update</h2>
     <p>You are logged in with the default password. Set a new personal password before accessing the dashboard.</p>
@@ -273,8 +273,43 @@
             <label style="color:#eee;">Select Member Name:</label>
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
+
+        <!-- 🌟 NEW: MONTH SELECTION DROPDOWN FOR ADMIN MANUAL MARKING -->
+        <div class="input-group">
+            <label style="color:#eee;">Select Target Month:</label>
+            <select id="adminTargetMonth" style="color:#333; background:#fff;">
+                <option value="July2026">July 2026</option>
+                <option value="August2026">August 2026</option>
+                <option value="September2026">September 2026</option>
+                <option value="October2026">October 2026</option>
+                <option value="November2026">November 2026</option>
+                <option value="December2026">December 2026</option>
+                <option value="January2027">January 2027</option>
+                <option value="February2027">February 2027</option>
+                <option value="March2027">March 2027</option>
+                <option value="April2027">April 2027</option>
+                <option value="May2027">May 2027</option>
+                <option value="June2027">June 2027</option>
+            </select>
+        </div>
+
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
         
+        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART -->
+        <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
+        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+            <table id="adminLedgerTable" style="width: 100%; font-size: 12px; min-width: 600px; text-align: center; border-collapse: collapse;">
+                <thead>
+                    <tr id="ledgerHeader">
+                        <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 6px;">Members</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerBody" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    <!-- Loaded dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📸 Pending Verification Pipeline</h4>
         <div id="screenshotApprovalsContainer" style="font-size: 13px; color: #eee; max-height:300px; overflow-y:auto;">
             <p style="color:#bbb; font-style:italic;">No active verification items in stream pipeline.</p>
@@ -301,12 +336,18 @@
             <h3 id="totalBalanceView">₹400</h3>
         </div>
 
+        <!-- 💳 NEW DESIGNED PAYMENT SECTION -->
         <div id="paymentForm" class="payment-section">
             <p id="paymentFormNote" style="margin:0 0 15px 0; font-size:14px; color:#ddd;"></p>
-            <a id="upiPayLink" href="#" class="btn-action" style="background: #2ecc71; margin-top:0; margin-bottom: 15px;">Launch UPI App & Pay</a>
+            
+            <!-- Launch UPI ബട്ടണ് സ്കൈ ബ്ലൂ കളർ കൊടുത്തു -->
+            <a id="upiPayLink" href="#" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
+            
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee; font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
-            <button class="btn-action" style="margin-top: 15px; background: #333;" onclick="submitTransaction()">Submit for Admin Verification</button>
+            
+            <!-- സബ്മിറ്റ് ബട്ടൺ പച്ചയാക്കി "Confirm Payment" എന്ന് പേര് മാറ്റി -->
+            <button class="btn-action" style="margin-top: 15px; background: #2ec4b6; box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);" onclick="submitTransaction()">Confirm Payment</button>
         </div>
     </div>
 
@@ -409,7 +450,14 @@
             document.getElementById('adminBadge').style.display = 'inline-block';
             document.getElementById('adminControlPanelCard').style.display = 'block';
             document.getElementById('adminTargetUser').innerHTML = allMembersList.map(m=>`<option value="${m}">${m}</option>`).join('');
+            // ടാർഗെറ്റ് മന്ത് ഡ്രോപ്പ്ഡൗൺ കറന്റ് മന്തിലേക്ക് ഡിഫോൾട്ട് ആക്കുന്നു
+            const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+            const monthDropdown = document.getElementById('adminTargetMonth');
+            if(monthDropdown && [...monthDropdown.options].some(o => o.value === currentMonthId)) {
+                monthDropdown.value = currentMonthId;
+            }
             listenForPendingApprovals();
+            loadAdminAnnualLedger(); // അഡ്മിൻ പാനൽ റൺ ചെയ്യുമ്പോൾ ചാർട്ടും ലോഡ് ആകും
         }
         fetchLiveDatabaseContent(user);
     }
@@ -456,22 +504,45 @@
             db.collection("transactions").add({ date: new Date().toISOString().split('T')[0], name: app.username, desc: "Proof Verified (App Approved)", type: "Credit", status: "Paid", amount: app.amount });
             db.collection("approvals").doc(id).delete().then(() => {
                 alert(`Approved successfully for ${app.username}!`);
+                loadAdminAnnualLedger(); // ചാർട്ട് ഡാറ്റ റീഫ്രഷ് ചെയ്യാൻ
             });
         });
     }
 
+    // 🌟 UPDATED FUNCTION: SELECTED MONTH ലോജിക് ആഡ് ചെയ്തു
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
+        const m = document.getElementById('adminTargetMonth').value; 
+        
         if(!u) { alert("Select a member!"); return; }
-        const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+        if(!m) { alert("Select a month!"); return; }
+
         db.collection("dues").doc(u).set({ months: [] });
-        db.collection("trackers").doc(currentMonthId).update({
+        
+        db.collection("trackers").doc(m).update({
             paid: firebase.firestore.FieldValue.arrayUnion(u),
             pending: firebase.firestore.FieldValue.arrayRemove(u)
+        }).catch(() => {
+            // ഡോക്യുമെന്റ് കൺസോളിൽ ഇല്ലെങ്കിൽ അത് ക്രിയേറ്റ് ചെയ്യാനുള്ള സേഫ്റ്റി ഫോൾബാക്ക്
+            let paidArr = [u];
+            let pendArr = allMembersList.filter(item => item !== u);
+            return db.collection("trackers").doc(m).set({ paid: paidArr, pending: pendArr });
         });
+
         db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(500) });
-        db.collection("transactions").add({ date: new Date().toISOString().split('T')[0], name: u, desc: "Paid to Admin directly", type: "Credit", status: "Paid", amount: 500 });
-        alert(`Cleared for ${u}!`);
+        
+        let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
+        db.collection("transactions").add({ 
+            date: new Date().toISOString().split('T')[0], 
+            name: u, 
+            desc: `Paid to Admin directly (For ${displayMonth})`, 
+            type: "Credit", 
+            status: "Paid", 
+            amount: 500 
+        });
+
+        alert(`Cleared ${displayMonth} successfully for ${u}!`);
+        loadAdminAnnualLedger(); // ചാർട്ട് ഡാറ്റ റീഫ്രഷ് ചെയ്യാൻ
     }
 
     function fetchLiveDatabaseContent(user) {
@@ -498,6 +569,7 @@
                 const d = doc.exists ? doc.data() : { paid: [], pending: allMembersList };
                 renderPaidPendingTrackers(d.paid || [], d.pending || allMembersList);
             }
+            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
         setupStatementFilters();
     }
@@ -579,7 +651,7 @@
     }
 
     function setupStatementFilters() {
-        document.getElementById('monthFilter').innerHTML = `<option value="all">All Statements</option>` + ["July 2026", "August 2026"].map(m=>`<option value="${m}">${m}</option>`).join('');
+        document.getElementById('monthFilter').innerHTML = `<option value="all">All Statements</option>` + ["July 2026", "August 2026", "September 2026", "October 2026", "November 2026", "December 2026"].map(m=>`<option value="${m}">${m}</option>`).join('');
     }
 
     function filterByMonth() {
@@ -602,8 +674,56 @@
     function downloadPDFStatement() {
         const element = document.getElementById('printableStatementArea');
         document.getElementById('pdfReportTitle').style.display = 'block';
-        html2pdf().set({ margin: 10, filename: 'CJ_Fund_Statement.pdf', html2canvas: { scale: 2 }, jsPDF: { format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => {
+        
+        const opt = {
+            margin: 10,
+            filename: 'CJ_Fund_Statement.pdf',
+            html2canvas: { scale: 2, logging: false, useCORS: true },
+            jsPDF: { format: 'a4', orientation: 'portrait' }
+        };
+        
+        html2pdf().set(opt).from(element).save().then(() => {
             document.getElementById('pdfReportTitle').style.display = 'none';
+        });
+    }
+
+    // 📊 ANNUAL LEDGER DATA FETCH & INLINE INJECTION
+    function loadAdminAnnualLedger() {
+        const monthsToShow = [
+            "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
+            "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
+        ];
+        
+        const headerRow = document.getElementById('ledgerHeader');
+        headerRow.innerHTML = `<th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">Members</th>`;
+        
+        monthsToShow.forEach(m => {
+            let formattedMonth = m.replace("2026", " '26").replace("2027", " '27");
+            headerRow.innerHTML += `<th style="background: #3b1563; color: #ffd700; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">${formattedMonth}</th>`;
+        });
+
+        db.collection("trackers").get().then((snapshot) => {
+            let trackerData = {};
+            snapshot.forEach(doc => { trackerData[doc.id] = doc.data(); });
+
+            const tbody = document.getElementById('ledgerBody');
+            tbody.innerHTML = "";
+
+            allMembersList.forEach(member => {
+                let rowHTML = `<tr><td style="text-align: left; font-weight: bold; padding: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,215,0,0.05); color:#ffd700;">${member}</td>`;
+                
+                monthsToShow.forEach(monthId => {
+                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
+                    if (monthInfo.paid && monthInfo.paid.includes(member)) {
+                        rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 8px;">✓ Paid</td>`;
+                    } else {
+                        rowHTML += `<td style="color: #ff4d4d; background: rgba(255, 77, 77, 0.04); border: 1px solid rgba(255,255,255,0.1); padding: 8px; font-size: 11px;">⏳ Pending</td>`;
+                    }
+                });
+                
+                rowHTML += `</tr>`;
+                tbody.innerHTML += rowHTML;
+            });
         });
     }
 
