@@ -274,7 +274,7 @@
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
 
-        <!-- 🌟 NEW: MONTH SELECTION DROPDOWN FOR ADMIN MANUAL MARKING -->
+        <!-- 📊 MONTH SELECTION DROPDOWN FOR ADMIN MANUAL MARKING -->
         <div class="input-group">
             <label style="color:#eee;">Select Target Month:</label>
             <select id="adminTargetMonth" style="color:#333; background:#fff;">
@@ -336,17 +336,15 @@
             <h3 id="totalBalanceView">₹400</h3>
         </div>
 
-        <!-- 💳 NEW DESIGNED PAYMENT SECTION -->
+        <!-- 💳 DESIGNED PAYMENT SECTION -->
         <div id="paymentForm" class="payment-section">
             <p id="paymentFormNote" style="margin:0 0 15px 0; font-size:14px; color:#ddd;"></p>
             
-            <!-- Launch UPI ബട്ടണ് സ്കൈ ബ്ലൂ കളർ കൊടുത്തു -->
             <a id="upiPayLink" href="#" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
             
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee; font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
             
-            <!-- സബ്മിറ്റ് ബട്ടൺ പച്ചയാക്കി "Confirm Payment" എന്ന് പേര് മാറ്റി -->
             <button class="btn-action" style="margin-top: 15px; background: #2ec4b6; box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);" onclick="submitTransaction()">Confirm Payment</button>
         </div>
     </div>
@@ -392,6 +390,9 @@
     let liveTransactionsList = [];
     let activeUserDues = [];
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
+    
+    // 💰 GLOBAL MONTHLY SUBSCRIPTION AMOUNT CHANGED TO 600
+    const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
 
     window.addEventListener('DOMContentLoaded', () => {
         const sessionUsername = localStorage.getItem("cj_active_user");
@@ -450,14 +451,14 @@
             document.getElementById('adminBadge').style.display = 'inline-block';
             document.getElementById('adminControlPanelCard').style.display = 'block';
             document.getElementById('adminTargetUser').innerHTML = allMembersList.map(m=>`<option value="${m}">${m}</option>`).join('');
-            // ടാർഗെറ്റ് മന്ത് ഡ്രോപ്പ്ഡൗൺ കറന്റ് മന്തിലേക്ക് ഡിഫോൾട്ട് ആക്കുന്നു
+            
             const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
             const monthDropdown = document.getElementById('adminTargetMonth');
             if(monthDropdown && [...monthDropdown.options].some(o => o.value === currentMonthId)) {
                 monthDropdown.value = currentMonthId;
             }
             listenForPendingApprovals();
-            loadAdminAnnualLedger(); // അഡ്മിൻ പാനൽ റൺ ചെയ്യുമ്പോൾ ചാർട്ടും ലോഡ് ആകും
+            loadAdminAnnualLedger();
         }
         fetchLiveDatabaseContent(user);
     }
@@ -504,12 +505,12 @@
             db.collection("transactions").add({ date: new Date().toISOString().split('T')[0], name: app.username, desc: "Proof Verified (App Approved)", type: "Credit", status: "Paid", amount: app.amount });
             db.collection("approvals").doc(id).delete().then(() => {
                 alert(`Approved successfully for ${app.username}!`);
-                loadAdminAnnualLedger(); // ചാർട്ട് ഡാറ്റ റീഫ്രഷ് ചെയ്യാൻ
+                loadAdminAnnualLedger();
             });
         });
     }
 
-    // 🌟 UPDATED FUNCTION: SELECTED MONTH ലോജിക് ആഡ് ചെയ്തു
+    // 💰 UPDATED: INCREMENT VALUE CHANGED TO 600 FOR MANUAL OVERRIDE
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -523,13 +524,13 @@
             paid: firebase.firestore.FieldValue.arrayUnion(u),
             pending: firebase.firestore.FieldValue.arrayRemove(u)
         }).catch(() => {
-            // ഡോക്യുമെന്റ് കൺസോളിൽ ഇല്ലെങ്കിൽ അത് ക്രിയേറ്റ് ചെയ്യാനുള്ള സേഫ്റ്റി ഫോൾബാക്ക്
             let paidArr = [u];
             let pendArr = allMembersList.filter(item => item !== u);
             return db.collection("trackers").doc(m).set({ paid: paidArr, pending: pendArr });
         });
 
-        db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(500) });
+        // 600 ആക്കി അപ്ഡേറ്റ് ചെയ്തു
+        db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(MONTHLY_SUBSCRIPTION_AMOUNT) });
         
         let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
         db.collection("transactions").add({ 
@@ -538,11 +539,11 @@
             desc: `Paid to Admin directly (For ${displayMonth})`, 
             type: "Credit", 
             status: "Paid", 
-            amount: 500 
+            amount: MONTHLY_SUBSCRIPTION_AMOUNT 
         });
 
         alert(`Cleared ${displayMonth} successfully for ${u}!`);
-        loadAdminAnnualLedger(); // ചാർട്ട് ഡാറ്റ റീഫ്രഷ് ചെയ്യാൻ
+        loadAdminAnnualLedger();
     }
 
     function fetchLiveDatabaseContent(user) {
@@ -574,6 +575,7 @@
         setupStatementFilters();
     }
 
+    // 💰 UPDATED: DEFAULT AMOUNT AND CALCULATION UPDATED TO 600
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
@@ -593,10 +595,11 @@
             txt.innerHTML = `<span style="color:#2ecc71;">${thisMonth} payment done</span>`;
             sub.innerHTML = `✨ ${nextMonth} Advance Pay`; sub.style.display = "block";
             btn.innerText = "Pay Now"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
-            note.innerHTML = `Pay the <b>Advance Amount (₹500)</b> for ${nextMonth}.`;
-            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=500.00&cu=INR&tn=${user}%20Advance`;
+            note.innerHTML = `Pay the <b>Advance Amount (₹${MONTHLY_SUBSCRIPTION_AMOUNT})</b> for ${nextMonth}.`;
+            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${MONTHLY_SUBSCRIPTION_AMOUNT}.00&cu=INR&tn=${user}%20Advance`;
         } else {
-            let totalDue = activeUserDues.reduce((a,b)=> a + (b.amount||500), 0);
+            // പഴയ 500 ഫോൾബാക്ക് മാറ്റി MONTHLY_SUBSCRIPTION_AMOUNT (600) ആക്കി
+            let totalDue = activeUserDues.reduce((a,b)=> a + (b.amount || MONTHLY_SUBSCRIPTION_AMOUNT), 0);
             box.className = "status-box due"; sig.className = "signal red";
             txt.innerHTML = `${thisMonth} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
             sub.style.display = "none";
@@ -615,6 +618,7 @@
 
     function showPaymentForm() { document.getElementById('paymentForm').style.display = 'block'; document.getElementById('payNowBtn').style.display = 'none'; }
 
+    // 💰 UPDATED: DEFAULT AMOUNT SENT TO PIPELINE IS NOW 600
     function submitTransaction() {
         const txnId = document.getElementById('txnId').value.trim();
         const file = document.getElementById('screenshotFile').files[0];
@@ -623,7 +627,7 @@
         const send = (base64 = null) => {
             db.collection("approvals").add({
                 username: currentLoggedInUser,
-                amount: 500,
+                amount: MONTHLY_SUBSCRIPTION_AMOUNT, // 600 ആക്കി
                 screenshot: base64,
                 txnId: txnId,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -687,7 +691,6 @@
         });
     }
 
-    // 📊 ANNUAL LEDGER DATA FETCH & INLINE INJECTION
     function loadAdminAnnualLedger() {
         const monthsToShow = [
             "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
@@ -729,7 +732,6 @@
 
     function logout() { localStorage.clear(); location.reload(); }
 
-    // 📲 PWA INSTALL ENGINE FOR EXTERNAL DEVICES
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
