@@ -274,7 +274,6 @@
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
 
-        <!-- 📊 MONTH SELECTION DROPDOWN FOR ADMIN MANUAL MARKING -->
         <div class="input-group">
             <label style="color:#eee;">Select Target Month:</label>
             <select id="adminTargetMonth" style="color:#333; background:#fff;">
@@ -298,10 +297,10 @@
         <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART -->
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
         <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-            <table id="adminLedgerTable" style="width: 100%; font-size: 12px; min-width: 600px; text-align: center; border-collapse: collapse;">
+            <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
                 <thead>
                     <tr id="ledgerHeader">
-                        <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 6px;">Members</th>
+                        <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">Members</th>
                     </tr>
                 </thead>
                 <tbody id="ledgerBody" style="background: rgba(255,255,255,0.05); color: #fff;">
@@ -338,6 +337,13 @@
 
         <!-- 💳 DESIGNED PAYMENT SECTION -->
         <div id="paymentForm" class="payment-section">
+            <div style="background: rgba(255,215,0,0.1); padding:10px; border-radius:8px; border:1px dashed #ffd700; margin-bottom:15px;">
+                <label style="color:#ffd700; font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">Select Amount to Pay:</label>
+                <select id="userPayAmountSelector" onchange="adjustUPILinkForAmount()" style="color:#333; background:#fff; padding:8px; border-radius:6px; width:100%; font-weight:bold; font-size:15px;">
+                    <!-- Loaded dynamically via JavaScript based on status -->
+                </select>
+            </div>
+
             <p id="paymentFormNote" style="margin:0 0 15px 0; font-size:14px; color:#ddd;"></p>
             
             <a id="upiPayLink" href="#" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
@@ -389,10 +395,14 @@
     let currentLoggedInUser = "";
     let liveTransactionsList = [];
     let activeUserDues = [];
+    let currentMonthTrackerData = { paid: [], pending: ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"] };
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
-    
-    // 💰 GLOBAL MONTHLY SUBSCRIPTION AMOUNT CHANGED TO 600
     const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
+
+    const orderedTimelineMonths = [
+        "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
+        "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
+    ];
 
     window.addEventListener('DOMContentLoaded', () => {
         const sessionUsername = localStorage.getItem("cj_active_user");
@@ -400,7 +410,6 @@
             currentLoggedInUser = sessionUsername; 
             loginToDashboard(sessionUsername); 
 
-            // ⚙️ ONE-TIME AUTO FIX
             if (sessionUsername === "Jaisal") {
                 db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
                     snapshot.forEach((doc) => { doc.ref.delete(); });
@@ -494,23 +503,65 @@
         db.collection("approvals").doc(id).get().then(doc => {
             if(!doc.exists) return;
             const app = doc.data();
-            const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+            const totalPaidAmount = app.amount;
             
-            db.collection("dues").doc(app.username).set({ months: [] });
-            db.collection("trackers").doc(currentMonthId).update({
-                paid: firebase.firestore.FieldValue.arrayUnion(app.username),
-                pending: firebase.firestore.FieldValue.arrayRemove(app.username)
-            });
-            db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(app.amount) });
-            db.collection("transactions").add({ date: new Date().toISOString().split('T')[0], name: app.username, desc: "Proof Verified (App Approved)", type: "Credit", status: "Paid", amount: app.amount });
-            db.collection("approvals").doc(id).delete().then(() => {
-                alert(`Approved successfully for ${app.username}!`);
-                loadAdminAnnualLedger();
+            let monthsToCreditCount = Math.floor(totalPaidAmount / MONTHLY_SUBSCRIPTION_AMOUNT);
+            if(monthsToCreditCount <= 0) monthsToCreditCount = 1;
+
+            db.collection("trackers").get().then((snapshot) => {
+                let trackerMap = {};
+                snapshot.forEach(d => { trackerMap[d.id] = d.data(); });
+
+                let targetedMonthsToUpdate = [];
+                
+                for(let i = 0; i < orderedTimelineMonths.length; i++) {
+                    let mId = orderedTimelineMonths[i];
+                    if(mId === "July2026") continue; 
+
+                    let mData = trackerMap[mId] || { paid: [], pending: allMembersList };
+                    if(!mData.paid || !mData.paid.includes(app.username)) {
+                        targetedMonthsToUpdate.push(mId);
+                        if(targetedMonthsToUpdate.length === monthsToCreditCount) break;
+                    }
+                }
+
+                if(targetedMonthsToUpdate.length < monthsToCreditCount) {
+                    let currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+                    if(!targetedMonthsToUpdate.includes(currentMonthId)) {
+                        targetedMonthsToUpdate.push(currentMonthId);
+                    }
+                }
+
+                let batch = db.batch();
+                targetedMonthsToUpdate.forEach(mId => {
+                    let ref = db.collection("trackers").doc(mId);
+                    batch.update(ref, {
+                        paid: firebase.firestore.FieldValue.arrayUnion(app.username),
+                        pending: firebase.firestore.FieldValue.arrayRemove(app.username)
+                    });
+                });
+
+                db.collection("dues").doc(app.username).set({ months: [] });
+                db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(totalPaidAmount) });
+                
+                let monthLabels = targetedMonthsToUpdate.map(m => m.replace("2026", " 2026").replace("2027", " 2027")).join(', ');
+                db.collection("transactions").add({ 
+                    date: new Date().toISOString().split('T')[0], 
+                    name: app.username, 
+                    desc: `Proof Verified (For ${monthLabels})`, 
+                    type: "Credit", 
+                    status: "Paid", 
+                    amount: totalPaidAmount 
+                });
+
+                db.collection("approvals").doc(id).delete().then(() => {
+                    alert(`Approved successfully for ${app.username} (${monthsToCreditCount} Months Credit)!`);
+                    loadAdminAnnualLedger();
+                });
             });
         });
     }
 
-    // 💰 UPDATED: INCREMENT VALUE CHANGED TO 600 FOR MANUAL OVERRIDE
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -529,7 +580,6 @@
             return db.collection("trackers").doc(m).set({ paid: paidArr, pending: pendArr });
         });
 
-        // 600 ആക്കി അപ്ഡേറ്റ് ചെയ്തു
         db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(MONTHLY_SUBSCRIPTION_AMOUNT) });
         
         let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
@@ -555,11 +605,11 @@
             liveTransactionsList = []; snap.forEach(doc => liveTransactionsList.push(doc.data()));
             if(liveTransactionsList.length === 0) liveTransactionsList = [{ date: '2026-07-31', name: 'July Balance', type: 'Credit', desc: 'Closing Balance', status: 'Paid', amount: 400 }];
             renderTable(liveTransactionsList);
+            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
 
         db.collection("dues").doc(user).onSnapshot(doc => {
             activeUserDues = doc.exists ? (doc.data().months || []) : [];
-            updatePaymentStatusPanel(user);
         });
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
@@ -567,46 +617,82 @@
             if(!doc.exists && currentMonthId === "July2026") {
                 db.collection("trackers").doc("July2026").set({ paid: allMembersList, pending: [] });
             } else {
-                const d = doc.exists ? doc.data() : { paid: [], pending: allMembersList };
-                renderPaidPendingTrackers(d.paid || [], d.pending || allMembersList);
+                currentMonthTrackerData = doc.exists ? doc.data() : { paid: [], pending: allMembersList };
+                renderPaidPendingTrackers(currentMonthTrackerData.paid || [], currentMonthTrackerData.pending || allMembersList);
+                updatePaymentStatusPanel(currentLoggedInUser);
             }
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
         setupStatementFilters();
     }
 
-    // 💰 UPDATED: DEFAULT AMOUNT AND CALCULATION UPDATED TO 600
+    function adjustUPILinkForAmount() {
+        const amt = document.getElementById('userPayAmountSelector').value;
+        const user = currentLoggedInUser;
+        const note = document.getElementById('paymentFormNote');
+        
+        let labelText = "Advance Amount";
+        const selectedOption = document.getElementById('userPayAmountSelector').selectedOptions[0];
+        if (selectedOption && selectedOption.text.includes("Due")) {
+            labelText = "Due Amount";
+        }
+        
+        let monthsText = amt === "600" ? "1 Month" : `${Math.floor(amt/600)} Months`;
+        note.innerHTML = `Pay the <b>${labelText} (₹${amt})</b> for ${monthsText}.`;
+        document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${user}%20Payment`;
+    }
+
+    // 🎯 DROPDOWN LOGIC UPDATED ACCORDING TO YOUR PREFERENCE
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
         const txt = document.getElementById('statusText');
         const sub = document.getElementById('statusSubText');
         const btn = document.getElementById('payNowBtn');
-        const note = document.getElementById('paymentFormNote');
+        const amtSelector = document.getElementById('userPayAmountSelector');
 
         const dObj = new Date();
         const thisMonth = dObj.toLocaleString('default', { month: 'long' });
-        const nextMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 1).toLocaleString('default', { month: 'long' });
 
         document.getElementById('monthTrackerTitle').innerText = `${thisMonth} ${dObj.getFullYear()} Tracker`;
 
-        if (activeUserDues.length === 0) {
+        // യൂസർ പാൻഡിങ് ലിസ്റ്റിൽ ഉണ്ടോ എന്ന് നോക്കുന്നു
+        let isPendingThisMonth = currentMonthTrackerData.pending && currentMonthTrackerData.pending.includes(user);
+
+        if (!isPendingThisMonth) {
+            // 🟢 കറന്റ് മാസം പൈസ അടച്ചുകഴിഞ്ഞവർക്ക് നോർമൽ മന്ത് പേയ്‌മെന്റ് ഓപ്ഷനുകൾ
             box.className = "status-box paid"; sig.className = "signal green";
             txt.innerHTML = `<span style="color:#2ecc71;">${thisMonth} payment done</span>`;
-            sub.innerHTML = `✨ ${nextMonth} Advance Pay`; sub.style.display = "block";
+            sub.innerHTML = `✨ Next Month Advance Window Open`; sub.style.display = "block";
             btn.innerText = "Pay Now"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
-            note.innerHTML = `Pay the <b>Advance Amount (₹${MONTHLY_SUBSCRIPTION_AMOUNT})</b> for ${nextMonth}.`;
-            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${MONTHLY_SUBSCRIPTION_AMOUNT}.00&cu=INR&tn=${user}%20Advance`;
+            
+            if(amtSelector) {
+                amtSelector.innerHTML = `
+                    <option value="600">₹600 (1 Month Payment)</option>
+                    <option value="1200">₹1200 (2 Months Payment)</option>
+                    <option value="1800">₹1800 (3 Months Payment)</option>
+                    <option value="2400">₹2400 (4 Months Payment)</option>
+                `;
+            }
         } else {
-            // പഴയ 500 ഫോൾബാക്ക് മാറ്റി MONTHLY_SUBSCRIPTION_AMOUNT (600) ആക്കി
-            let totalDue = activeUserDues.reduce((a,b)=> a + (b.amount || MONTHLY_SUBSCRIPTION_AMOUNT), 0);
+            // 🔴 കറന്റ് മാസം പൈസ അടയ്ക്കാൻ ബാക്കിയുള്ളവർക്ക് (ഡ്യൂ ഉള്ളവർക്ക്)
             box.className = "status-box due"; sig.className = "signal red";
-            txt.innerHTML = `${thisMonth} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹${totalDue}</b></span>`;
+            txt.innerHTML = `${thisMonth} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹600</b></span>`;
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
-            note.innerHTML = `Pay your current active due of <b>₹${totalDue}</b>.`;
-            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${totalDue}.00&cu=INR&tn=${user}%20Due`;
+            
+            // 🔄 കറന്റ് മാസത്തെ ഡ്യൂ ഓപ്ഷൻ ഒന്നാമതായും ബാക്കി മന്ത് പേയ്‌മെന്റ് ഓപ്ഷനുകളായും കാണിക്കുന്നു
+            if(amtSelector) {
+                amtSelector.innerHTML = `
+                    <option value="600">₹600 (${thisMonth} Due)</option>
+                    <option value="1200">₹1200 (2 Months Payment)</option>
+                    <option value="1800">₹1800 (3 Months Payment)</option>
+                    <option value="2400">₹2400 (4 Months Payment)</option>
+                `;
+            }
         }
+        
+        adjustUPILinkForAmount();
     }
 
     function renderPaidPendingTrackers(paid, pending) {
@@ -618,16 +704,17 @@
 
     function showPaymentForm() { document.getElementById('paymentForm').style.display = 'block'; document.getElementById('payNowBtn').style.display = 'none'; }
 
-    // 💰 UPDATED: DEFAULT AMOUNT SENT TO PIPELINE IS NOW 600
     function submitTransaction() {
         const txnId = document.getElementById('txnId').value.trim();
         const file = document.getElementById('screenshotFile').files[0];
+        const selectedAmt = parseInt(document.getElementById('userPayAmountSelector').value);
+
         if(!txnId) { alert("Enter valid Transaction ID"); return; }
 
         const send = (base64 = null) => {
             db.collection("approvals").add({
                 username: currentLoggedInUser,
-                amount: MONTHLY_SUBSCRIPTION_AMOUNT, // 600 ആക്കി
+                amount: selectedAmt, 
                 screenshot: base64,
                 txnId: txnId,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -654,6 +741,7 @@
         });
     }
 
+    // ... (rest of filtering and ledger loading unchanged for performance safety)
     function setupStatementFilters() {
         document.getElementById('monthFilter').innerHTML = `<option value="all">All Statements</option>` + ["July 2026", "August 2026", "September 2026", "October 2026", "November 2026", "December 2026"].map(m=>`<option value="${m}">${m}</option>`).join('');
     }
@@ -692,15 +780,10 @@
     }
 
     function loadAdminAnnualLedger() {
-        const monthsToShow = [
-            "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
-            "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
-        ];
-        
         const headerRow = document.getElementById('ledgerHeader');
         headerRow.innerHTML = `<th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">Members</th>`;
         
-        monthsToShow.forEach(m => {
+        orderedTimelineMonths.forEach(m => {
             let formattedMonth = m.replace("2026", " '26").replace("2027", " '27");
             headerRow.innerHTML += `<th style="background: #3b1563; color: #ffd700; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">${formattedMonth}</th>`;
         });
@@ -709,24 +792,85 @@
             let trackerData = {};
             snapshot.forEach(doc => { trackerData[doc.id] = doc.data(); });
 
+            let monthlyCollectionSum = {};
+            let monthHasPayments = {}; 
+            
+            orderedTimelineMonths.forEach(m => {
+                monthlyCollectionSum[m] = 0;
+                monthHasPayments[m] = false;
+            });
+
+            let userCreditTxns = {};
+            allMembersList.forEach(m => userCreditTxns[m] = liveTransactionsList.filter(t => t.name === m && t.type === 'Credit' && !t.desc.includes("Closing Balance")));
+
             const tbody = document.getElementById('ledgerBody');
             tbody.innerHTML = "";
 
             allMembersList.forEach(member => {
                 let rowHTML = `<tr><td style="text-align: left; font-weight: bold; padding: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,215,0,0.05); color:#ffd700;">${member}</td>`;
                 
-                monthsToShow.forEach(monthId => {
+                let txnsList = [...(userCreditTxns[member] || [])].reverse(); 
+                let txnIndex = 0;
+
+                orderedTimelineMonths.forEach(monthId => {
                     let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
+                    
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
-                        rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 8px;">✓ Paid</td>`;
+                        if (monthId === "July2026") {
+                            rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 6px;">✓ Paid</td>`;
+                        } else {
+                            let matchedTxn = txnsList[txnIndex];
+                            
+                            let amt = 600; 
+                            let dateStr = "";
+
+                            if(matchedTxn) {
+                                dateStr = matchedTxn.date.split('-').reverse().slice(0,2).join('/');
+                                monthlyCollectionSum[monthId] += 600;
+                            } else {
+                                monthlyCollectionSum[monthId] += 600;
+                            }
+                            
+                            if(matchedTxn && matchedTxn.amount > 600) {
+                                matchedTxn.amount -= 600; 
+                            } else {
+                                txnIndex++;
+                            }
+
+                            monthHasPayments[monthId] = true; 
+
+                            let displayDetails = dateStr ? `<br><span style="font-size:9px; color:#aaa; font-weight:normal;">₹${amt} (${dateStr})</span>` : `<br><span style="font-size:9px; color:#aaa; font-weight:normal;">₹${amt}</span>`;
+                            rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 6px; line-height:1.2;">✓ Paid${displayDetails}</td>`;
+                        }
                     } else {
-                        rowHTML += `<td style="color: #ff4d4d; background: rgba(255, 77, 77, 0.04); border: 1px solid rgba(255,255,255,0.1); padding: 8px; font-size: 11px;">⏳ Pending</td>`;
+                        rowHTML += `<td style="color: #ff4d4d; background: rgba(255, 77, 77, 0.04); border: 1px solid rgba(255,255,255,0.1); padding: 6px; font-size: 11px;">⏳ Pending</td>`;
                     }
                 });
                 
                 rowHTML += `</tr>`;
                 tbody.innerHTML += rowHTML;
             });
+
+            // SELECTIVE TOTAL BALANCE ROW
+            let totalRowHTML = `<tr style="background: rgba(255, 215, 0, 0.15); font-weight: bold; border-top: 2px solid #ffd700;">
+                <td style="text-align: left; padding: 10px; color: #ffd700; border: 1px solid rgba(255,255,255,0.15);">Total Balance</td>`;
+            
+            let runningBalance = 400; 
+
+            orderedTimelineMonths.forEach(monthId => {
+                if (monthId === "July2026") {
+                    totalRowHTML += `<td style="color: #ffd700; font-size: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.15);">₹400</td>`;
+                } else {
+                    runningBalance += monthlyCollectionSum[monthId];
+                    if (monthHasPayments[monthId] === true) {
+                        totalRowHTML += `<td style="color: #ffd700; font-size: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.15);">₹${runningBalance}</td>`;
+                    } else {
+                        totalRowHTML += `<td style="border: 1px solid rgba(255,255,255,0.15);"></td>`;
+                    }
+                }
+            });
+            totalRowHTML += `</tr>`;
+            tbody.innerHTML += totalRowHTML;
         });
     }
 
