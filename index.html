@@ -522,7 +522,7 @@
             sub.innerHTML = `✨ ${nextMonth} Advance Pay`; sub.style.display = "block";
             btn.innerText = "Pay Now"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
             note.innerHTML = `Pay the <b>Advance Amount (₹500)</b> for ${nextMonth}.`;
-            document.getElementById('upiPayLink').href = `upi://pay?pa=jaisal@oksbi&pn=CJFund&am=500.00&cu=INR&tn=${user}%20Advance`;
+            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=500.00&cu=INR&tn=${user}%20Advance`;
         } else {
             let totalDue = activeUserDues.reduce((a,b)=> a + (b.amount||500), 0);
             box.className = "status-box due"; sig.className = "signal red";
@@ -530,7 +530,7 @@
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
             note.innerHTML = `Pay your current active due of <b>₹${totalDue}</b>.`;
-            document.getElementById('upiPayLink').href = `upi://pay?pa=jaisal@oksbi&pn=CJFund&am=${totalDue}.00&cu=INR&tn=${user}%20Due`;
+            document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${totalDue}.00&cu=INR&tn=${user}%20Due`;
         }
     }
 
