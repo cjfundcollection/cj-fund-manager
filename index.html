@@ -157,9 +157,28 @@
             box-sizing: border-box;
         }
 
-        .user-profile-header { text-align: center; margin-bottom: 15px; }
+        .user-profile-header { text-align: center; margin-bottom: 15px; position: relative; }
         .user-profile-header h2 { color: #ffd700; font-size: 26px; text-shadow: 0 2px 10px rgba(255, 215, 0, 0.2); margin: 0; }
         .user-profile-header p { margin: 5px 0 0 0; color: #ddd; font-size: 14px; }
+
+        .btn-refresh {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffd700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: 0.2s;
+        }
+        .btn-refresh:hover { background: rgba(255, 255, 255, 0.25); }
 
         .status-box {
             background: rgba(255, 255, 255, 0.08);
@@ -214,7 +233,7 @@
         .filter-row .input-group label { color: #ddd; }
 
         #printableStatementArea { background: rgba(255,255,255,0.9); padding: 15px; border-radius: 12px; color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
         th { background-color: #f2f2f2; color: #333; }
         .text-green { color: #2ecc71; font-weight: bold; }
@@ -293,17 +312,17 @@
         </div>
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
-        
-        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART -->
+
+        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART (LIGHT BACKGROUND) -->
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
-        <div style="overflow-x: auto; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+        <div style="overflow-x: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
                 <thead>
                     <tr id="ledgerHeader">
-                        <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">Members</th>
+                        <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>
                     </tr>
                 </thead>
-                <tbody id="ledgerBody" style="background: rgba(255,255,255,0.05); color: #fff;">
+                <tbody id="ledgerBody" style="background: #fff; color: #333;">
                     <!-- Loaded dynamically via JS -->
                 </tbody>
             </table>
@@ -316,7 +335,9 @@
     </div>
 
     <div class="container">
+        <!-- 🔄 REFRESH BUTTON IN PROFILE HEADER -->
         <div class="user-profile-header">
+            <button class="btn-refresh" onclick="location.reload()">🔄 Refresh</button>
             <h2 id="userWelcome">Name</h2>
             <p id="userPhone">📞 +91 00000 00000</p>
             <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px; display:inline-block;">ADMIN ACCESS</span>
@@ -340,7 +361,7 @@
             <div style="background: rgba(255,215,0,0.1); padding:10px; border-radius:8px; border:1px dashed #ffd700; margin-bottom:15px;">
                 <label style="color:#ffd700; font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">Select Amount to Pay:</label>
                 <select id="userPayAmountSelector" onchange="adjustUPILinkForAmount()" style="color:#333; background:#fff; padding:8px; border-radius:6px; width:100%; font-weight:bold; font-size:15px;">
-                    <!-- Loaded dynamically via JavaScript based on status -->
+                    <!-- Dynamic Options -->
                 </select>
             </div>
 
@@ -352,6 +373,7 @@
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee; font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
             
             <button class="btn-action" style="margin-top: 15px; background: #2ec4b6; box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);" onclick="submitTransaction()">Confirm Payment</button>
+            <button class="btn-action" style="margin-top: 10px; background: rgba(255, 77, 77, 0.8); border: 1px solid #ff4d4d; box-shadow: none;" onclick="hidePaymentForm()">✖ Cancel / Back</button>
         </div>
     </div>
 
@@ -364,18 +386,49 @@
 
     <div class="container">
         <h3 style="color:#ffd700;">📊 Fund Statement</h3>
-        <div class="input-group"><label style="color:#eee">Select Month:</label><select id="monthFilter" onchange="filterByMonth()" style="color:#333; background:#fff;"><option value="all">All Statements</option></select></div>
+        
+        <!-- 🎯 SELECT MONTH DROPDOWN (WITH MONTHLY COLLECTION LEDGER) -->
+        <div class="input-group">
+            <label style="color:#eee">Select Month / Filter:</label>
+            <select id="monthFilter" onchange="filterByMonth()" style="color:#333; background:#fff; font-weight:bold;">
+                <!-- Populated dynamically via setupStatementFilters() -->
+            </select>
+        </div>
+
         <div class="filter-row">
             <div class="input-group"><label>From:</label><input type="date" id="fromDate" style="color:#333; background:#fff;"></div>
             <div class="input-group"><label>To:</label><input type="date" id="toDate" style="color:#333; background:#fff;"></div>
         </div>
         <button class="btn-action" style="background: #555; margin-top: 5px; margin-bottom: 20px;" onclick="filterByCustomDate()">Filter Statement</button>
-        <button class="btn-action" style="background: #27ae60; color: white; margin-bottom: 15px;" onclick="downloadPDFStatement()">📥 Download PDF Statement</button>
 
+        <!-- Dynamic Output Container -->
         <div id="printableStatementArea">
-            <h4 id="pdfReportTitle" style="margin: 5px 0; color: #3b1563; display: none; text-align: center;">CJ Fund Official Report</h4>
-            <table id="statementTable"><thead><tr><th>Date</th><th>Name</th><th>Description</th><th>Amount</th></tr></thead><tbody id="statementBody"></tbody></table>
+            <h4 id="pdfReportTitle" style="margin: 5px 0 10px 0; color: #3b1563; text-align: center; border-bottom: 2px solid #ffd700; padding-bottom: 5px; font-size: 15px;">
+                📋 Last 30 Days Transactions
+            </h4>
+            
+            <!-- Standard Transaction Table -->
+            <table id="statementTable">
+                <thead><tr><th>Date</th><th>Name</th><th>Description</th><th>Amount</th></tr></thead>
+                <tbody id="statementBody"></tbody>
+            </table>
+
+            <!-- Matrix Collection Chart Table -->
+            <div id="matrixStatementWrapper" style="display:none; overflow-x: auto;">
+                <table id="matrixStatementTable" style="width: 100%; font-size: 11px; min-width: 650px; text-align: center; border-collapse: collapse;">
+                    <thead>
+                        <tr id="matrixHeaderRow">
+                            <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrixBodyRow" style="color: #333;"></tbody>
+                </table>
+            </div>
         </div>
+
+        <!-- 📥 DYNAMIC DOWNLOAD PDF BUTTON -->
+        <button class="btn-action" style="background: #27ae60; color: white; margin-top: 15px; margin-bottom: 5px;" onclick="downloadPDFStatement()">📥 Download PDF</button>
+
         <button onclick="logout()" style="background:#ef4444; width:100%; border:none; padding:12px; border-radius:10px; color:white; font-weight:bold; font-size:16px; margin-top:15px; cursor:pointer;">Logout</button>
     </div>
 </div>
@@ -405,6 +458,7 @@
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
+        setupStatementFilters();
         const sessionUsername = localStorage.getItem("cj_active_user");
         if(sessionUsername) { 
             currentLoggedInUser = sessionUsername; 
@@ -604,7 +658,8 @@
         db.collection("transactions").orderBy("date", "desc").onSnapshot(snap => {
             liveTransactionsList = []; snap.forEach(doc => liveTransactionsList.push(doc.data()));
             if(liveTransactionsList.length === 0) liveTransactionsList = [{ date: '2026-07-31', name: 'July Balance', type: 'Credit', desc: 'Closing Balance', status: 'Paid', amount: 400 }];
-            renderTable(liveTransactionsList);
+            
+            filterByMonth();
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
 
@@ -623,7 +678,6 @@
             }
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
-        setupStatementFilters();
     }
 
     function adjustUPILinkForAmount() {
@@ -642,7 +696,6 @@
         document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${user}%20Payment`;
     }
 
-    // 🎯 DROPDOWN LOGIC UPDATED ACCORDING TO YOUR PREFERENCE
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
@@ -656,11 +709,9 @@
 
         document.getElementById('monthTrackerTitle').innerText = `${thisMonth} ${dObj.getFullYear()} Tracker`;
 
-        // യൂസർ പാൻഡിങ് ലിസ്റ്റിൽ ഉണ്ടോ എന്ന് നോക്കുന്നു
         let isPendingThisMonth = currentMonthTrackerData.pending && currentMonthTrackerData.pending.includes(user);
 
         if (!isPendingThisMonth) {
-            // 🟢 കറന്റ് മാസം പൈസ അടച്ചുകഴിഞ്ഞവർക്ക് നോർമൽ മന്ത് പേയ്‌മെന്റ് ഓപ്ഷനുകൾ
             box.className = "status-box paid"; sig.className = "signal green";
             txt.innerHTML = `<span style="color:#2ecc71;">${thisMonth} payment done</span>`;
             sub.innerHTML = `✨ Next Month Advance Window Open`; sub.style.display = "block";
@@ -675,13 +726,11 @@
                 `;
             }
         } else {
-            // 🔴 കറന്റ് മാസം പൈസ അടയ്ക്കാൻ ബാക്കിയുള്ളവർക്ക് (ഡ്യൂ ഉള്ളവർക്ക്)
             box.className = "status-box due"; sig.className = "signal red";
             txt.innerHTML = `${thisMonth} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹600</b></span>`;
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
             
-            // 🔄 കറന്റ് മാസത്തെ ഡ്യൂ ഓപ്ഷൻ ഒന്നാമതായും ബാക്കി മന്ത് പേയ്‌മെന്റ് ഓപ്ഷനുകളായും കാണിക്കുന്നു
             if(amtSelector) {
                 amtSelector.innerHTML = `
                     <option value="600">₹600 (${thisMonth} Due)</option>
@@ -702,7 +751,15 @@
         document.getElementById('pendingBadgeList').innerHTML = pending.map(n => `<span class="badge pending">⏳ ${n}</span>`).join('');
     }
 
-    function showPaymentForm() { document.getElementById('paymentForm').style.display = 'block'; document.getElementById('payNowBtn').style.display = 'none'; }
+    function showPaymentForm() { 
+        document.getElementById('paymentForm').style.display = 'block'; 
+        document.getElementById('payNowBtn').style.display = 'none'; 
+    }
+
+    function hidePaymentForm() {
+        document.getElementById('paymentForm').style.display = 'none';
+        document.getElementById('payNowBtn').style.display = 'inline-block';
+    }
 
     function submitTransaction() {
         const txnId = document.getElementById('txnId').value.trim();
@@ -720,8 +777,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 alert("Proof submitted successfully!");
-                document.getElementById('paymentForm').style.display = 'none';
-                document.getElementById('payNowBtn').style.display = 'inline-block';
+                hidePaymentForm();
                 document.getElementById('txnId').value = "";
                 document.getElementById('screenshotFile').value = "";
             });
@@ -741,14 +797,50 @@
         });
     }
 
-    // ... (rest of filtering and ledger loading unchanged for performance safety)
+    // 🎯 DROPDOWN POPULATOR WITH 'MONTHLY COLLECTION LEDGER'
     function setupStatementFilters() {
-        document.getElementById('monthFilter').innerHTML = `<option value="all">All Statements</option>` + ["July 2026", "August 2026", "September 2026", "October 2026", "November 2026", "December 2026"].map(m=>`<option value="${m}">${m}</option>`).join('');
+        document.getElementById('monthFilter').innerHTML = `
+            <option value="last30" selected>Last 30 Days Statement</option>
+            <option value="all">All Statements</option>
+            <option value="matrix_chart" style="font-weight:bold; color:#3b1563;">📋 Monthly Collection Ledger</option>
+        ` + ["July 2026", "August 2026", "September 2026", "October 2026", "November 2026", "December 2026"].map(m=>`<option value="${m}">${m}</option>`).join('');
     }
 
+    // 🎯 FILTER FUNCTION WITH UPDATED CAPTION
     function filterByMonth() {
         const s = document.getElementById('monthFilter').value;
-        if(s === 'all') { renderTable(liveTransactionsList); return; }
+        const mainTable = document.getElementById('statementTable');
+        const matrixWrapper = document.getElementById('matrixStatementWrapper');
+        const titleHeader = document.getElementById('pdfReportTitle');
+
+        if (s === 'matrix_chart') {
+            titleHeader.innerText = "📋 Monthly Collection Ledger";
+            mainTable.style.display = 'none';
+            matrixWrapper.style.display = 'block';
+            renderMatrixChartInStatement();
+            return;
+        } else {
+            mainTable.style.display = 'table';
+            matrixWrapper.style.display = 'none';
+        }
+
+        if (s === 'last30') {
+            titleHeader.innerText = "📋 Last 30 Days Transactions";
+            const dObj = new Date();
+            dObj.setDate(dObj.getDate() - 30);
+            const thirtyDaysAgoStr = dObj.toISOString().split('T')[0];
+            const f = liveTransactionsList.filter(item => item.date >= thirtyDaysAgoStr);
+            renderTable(f);
+            return;
+        }
+
+        if(s === 'all') { 
+            titleHeader.innerText = "📋 All Transactions Statement";
+            renderTable(liveTransactionsList); 
+            return; 
+        }
+        
+        titleHeader.innerText = `📋 ${s} Statement`;
         const f = liveTransactionsList.filter(item => {
             const d = new Date(item.date);
             return (d.toLocaleString('default', { month: 'long' }) + " " + d.getFullYear()).toLowerCase() === s.toLowerCase();
@@ -760,32 +852,43 @@
         const f = document.getElementById('fromDate').value;
         const t = document.getElementById('toDate').value;
         if(!f || !t) return;
+
+        const mainTable = document.getElementById('statementTable');
+        const matrixWrapper = document.getElementById('matrixStatementWrapper');
+        const titleHeader = document.getElementById('pdfReportTitle');
+
+        mainTable.style.display = 'table';
+        matrixWrapper.style.display = 'none';
+
+        const formattedFrom = f.split('-').reverse().join('-');
+        const formattedTo = t.split('-').reverse().join('-');
+        titleHeader.innerText = `📋 Statement (${formattedFrom} to ${formattedTo})`;
+
         renderTable(liveTransactionsList.filter(item => item.date >= f && item.date <= t));
     }
 
     function downloadPDFStatement() {
         const element = document.getElementById('printableStatementArea');
-        document.getElementById('pdfReportTitle').style.display = 'block';
+        const currentFilter = document.getElementById('monthFilter').value;
         
         const opt = {
             margin: 10,
-            filename: 'CJ_Fund_Statement.pdf',
+            filename: currentFilter === 'matrix_chart' ? 'CJ_Fund_Monthly_Collection_Ledger.pdf' : 'CJ_Fund_Statement.pdf',
             html2canvas: { scale: 2, logging: false, useCORS: true },
             jsPDF: { format: 'a4', orientation: 'portrait' }
         };
         
-        html2pdf().set(opt).from(element).save().then(() => {
-            document.getElementById('pdfReportTitle').style.display = 'none';
-        });
+        html2pdf().set(opt).from(element).save();
     }
 
+    // 📊 1. ADMIN PANEL ANNUAL COLLECTION LEDGER
     function loadAdminAnnualLedger() {
         const headerRow = document.getElementById('ledgerHeader');
-        headerRow.innerHTML = `<th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">Members</th>`;
+        headerRow.innerHTML = `<th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>`;
         
         orderedTimelineMonths.forEach(m => {
             let formattedMonth = m.replace("2026", " '26").replace("2027", " '27");
-            headerRow.innerHTML += `<th style="background: #3b1563; color: #ffd700; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">${formattedMonth}</th>`;
+            headerRow.innerHTML += `<th style="background: #3b1563; color: #ffd700; padding: 8px; border: 1px solid #ccc;">${formattedMonth}</th>`;
         });
 
         db.collection("trackers").get().then((snapshot) => {
@@ -807,7 +910,7 @@
             tbody.innerHTML = "";
 
             allMembersList.forEach(member => {
-                let rowHTML = `<tr><td style="text-align: left; font-weight: bold; padding: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,215,0,0.05); color:#ffd700;">${member}</td>`;
+                let rowHTML = `<tr><td style="text-align: left; font-weight: bold; padding: 8px; border: 1px solid #ccc; background: #f9f9f9; color:#333;">${member}</td>`;
                 
                 let txnsList = [...(userCreditTxns[member] || [])].reverse(); 
                 let txnIndex = 0;
@@ -817,10 +920,9 @@
                     
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
                         if (monthId === "July2026") {
-                            rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 6px;">✓ Paid</td>`;
+                            rowHTML += `<td style="color: #27ae60; font-weight: bold; background: #e8f8f5; border: 1px solid #ccc; padding: 6px;">✓ Paid</td>`;
                         } else {
                             let matchedTxn = txnsList[txnIndex];
-                            
                             let amt = 600; 
                             let dateStr = "";
 
@@ -839,11 +941,11 @@
 
                             monthHasPayments[monthId] = true; 
 
-                            let displayDetails = dateStr ? `<br><span style="font-size:9px; color:#aaa; font-weight:normal;">₹${amt} (${dateStr})</span>` : `<br><span style="font-size:9px; color:#aaa; font-weight:normal;">₹${amt}</span>`;
-                            rowHTML += `<td style="color: #2ecc71; font-weight: bold; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(255,255,255,0.1); padding: 6px; line-height:1.2;">✓ Paid${displayDetails}</td>`;
+                            let displayDetails = dateStr ? `<br><span style="font-size:9px; color:#555; font-weight:normal;">₹${amt} (${dateStr})</span>` : `<br><span style="font-size:9px; color:#555; font-weight:normal;">₹${amt}</span>`;
+                            rowHTML += `<td style="color: #27ae60; font-weight: bold; background: #e8f8f5; border: 1px solid #ccc; padding: 6px; line-height:1.2;">✓ Paid${displayDetails}</td>`;
                         }
                     } else {
-                        rowHTML += `<td style="color: #ff4d4d; background: rgba(255, 77, 77, 0.04); border: 1px solid rgba(255,255,255,0.1); padding: 6px; font-size: 11px;">⏳ Pending</td>`;
+                        rowHTML += `<td style="color: #e74c3c; background: #fadbd8; border: 1px solid #ccc; padding: 6px; font-size: 11px;">⏳ Pending</td>`;
                     }
                 });
                 
@@ -851,21 +953,130 @@
                 tbody.innerHTML += rowHTML;
             });
 
-            // SELECTIVE TOTAL BALANCE ROW
-            let totalRowHTML = `<tr style="background: rgba(255, 215, 0, 0.15); font-weight: bold; border-top: 2px solid #ffd700;">
-                <td style="text-align: left; padding: 10px; color: #ffd700; border: 1px solid rgba(255,255,255,0.15);">Total Balance</td>`;
+            // TOTAL BALANCE ROW
+            let totalRowHTML = `<tr style="background: #eaeded; font-weight: bold; border-top: 2px solid #333;">
+                <td style="text-align: left; padding: 10px; color: #333; border: 1px solid #ccc;">Total Balance</td>`;
             
             let runningBalance = 400; 
 
             orderedTimelineMonths.forEach(monthId => {
                 if (monthId === "July2026") {
-                    totalRowHTML += `<td style="color: #ffd700; font-size: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.15);">₹400</td>`;
+                    totalRowHTML += `<td style="color: #27ae60; font-size: 12px; padding: 10px; border: 1px solid #ccc;">₹400</td>`;
                 } else {
                     runningBalance += monthlyCollectionSum[monthId];
                     if (monthHasPayments[monthId] === true) {
-                        totalRowHTML += `<td style="color: #ffd700; font-size: 12px; padding: 10px; border: 1px solid rgba(255,255,255,0.15);">₹${runningBalance}</td>`;
+                        totalRowHTML += `<td style="color: #27ae60; font-size: 12px; padding: 10px; border: 1px solid #ccc;">₹${runningBalance}</td>`;
                     } else {
-                        totalRowHTML += `<td style="border: 1px solid rgba(255,255,255,0.15);"></td>`;
+                        totalRowHTML += `<td style="border: 1px solid #ccc;"></td>`;
+                    }
+                }
+            });
+            totalRowHTML += `</tr>`;
+            tbody.innerHTML += totalRowHTML;
+        });
+    }
+
+    // 📊 2. STATEMENT SELECT MONTH CHART RENDERER
+    function renderMatrixChartInStatement() {
+        db.collection("trackers").get().then((snapshot) => {
+            let trackerData = {};
+            snapshot.forEach(doc => { trackerData[doc.id] = doc.data(); });
+
+            let maxActiveMonthIndex = 0; 
+            const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+            let currentMonthIdx = orderedTimelineMonths.indexOf(currentMonthId);
+            if(currentMonthIdx !== -1) maxActiveMonthIndex = currentMonthIdx;
+
+            orderedTimelineMonths.forEach((mId, index) => {
+                let mInfo = trackerData[mId];
+                if(mInfo && mInfo.paid && mInfo.paid.length > 0) {
+                    if(index > maxActiveMonthIndex) maxActiveMonthIndex = index;
+                }
+            });
+
+            let displayMonths = orderedTimelineMonths.slice(0, maxActiveMonthIndex + 1);
+
+            const headerRow = document.getElementById('matrixHeaderRow');
+            headerRow.innerHTML = `<th style="background: #f2f2f2; color: #333; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>`;
+            
+            displayMonths.forEach(m => {
+                let formattedMonth = m.replace("2026", " '26").replace("2027", " '27");
+                headerRow.innerHTML += `<th style="background: #f2f2f2; color: #333; padding: 8px; border: 1px solid #ccc;">${formattedMonth}</th>`;
+            });
+
+            let monthlyCollectionSum = {};
+            let monthHasPayments = {}; 
+            
+            displayMonths.forEach(m => {
+                monthlyCollectionSum[m] = 0;
+                monthHasPayments[m] = false;
+            });
+
+            let userCreditTxns = {};
+            allMembersList.forEach(m => userCreditTxns[m] = liveTransactionsList.filter(t => t.name === m && t.type === 'Credit' && !t.desc.includes("Closing Balance")));
+
+            const tbody = document.getElementById('matrixBodyRow');
+            tbody.innerHTML = "";
+
+            allMembersList.forEach(member => {
+                let rowHTML = `<tr><td style="text-align: left; font-weight: bold; padding: 8px; border: 1px solid #ccc; background: #f9f9f9; color:#333;">${member}</td>`;
+                
+                let txnsList = [...(userCreditTxns[member] || [])].reverse(); 
+                let txnIndex = 0;
+
+                displayMonths.forEach(monthId => {
+                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
+                    
+                    if (monthInfo.paid && monthInfo.paid.includes(member)) {
+                        if (monthId === "July2026") {
+                            rowHTML += `<td style="color: #27ae60; font-weight: bold; background: #e8f8f5; border: 1px solid #ccc; padding: 6px;">✓ Paid</td>`;
+                        } else {
+                            let matchedTxn = txnsList[txnIndex];
+                            let amt = 600; 
+                            let dateStr = "";
+
+                            if(matchedTxn) {
+                                dateStr = matchedTxn.date.split('-').reverse().slice(0,2).join('/');
+                                monthlyCollectionSum[monthId] += 600;
+                            } else {
+                                monthlyCollectionSum[monthId] += 600;
+                            }
+                            
+                            if(matchedTxn && matchedTxn.amount > 600) {
+                                matchedTxn.amount -= 600; 
+                            } else {
+                                txnIndex++;
+                            }
+
+                            monthHasPayments[monthId] = true; 
+
+                            let displayDetails = dateStr ? `<br><span style="font-size:9px; color:#666; font-weight:normal;">₹${amt} (${dateStr})</span>` : `<br><span style="font-size:9px; color:#666; font-weight:normal;">₹${amt}</span>`;
+                            rowHTML += `<td style="color: #27ae60; font-weight: bold; background: #e8f8f5; border: 1px solid #ccc; padding: 6px; line-height:1.2;">✓ Paid${displayDetails}</td>`;
+                        }
+                    } else {
+                        rowHTML += `<td style="color: #e74c3c; background: #fadbd8; border: 1px solid #ccc; padding: 6px; font-size: 11px;">⏳ Pending</td>`;
+                    }
+                });
+                
+                rowHTML += `</tr>`;
+                tbody.innerHTML += rowHTML;
+            });
+
+            // TOTAL BALANCE ROW
+            let totalRowHTML = `<tr style="background: #eaeded; font-weight: bold; border-top: 2px solid #333;">
+                <td style="text-align: left; padding: 10px; color: #333; border: 1px solid #ccc;">Total Balance</td>`;
+            
+            let runningBalance = 400; 
+
+            displayMonths.forEach(monthId => {
+                if (monthId === "July2026") {
+                    totalRowHTML += `<td style="color: #27ae60; font-size: 12px; padding: 10px; border: 1px solid #ccc;">₹400</td>`;
+                } else {
+                    runningBalance += monthlyCollectionSum[monthId];
+                    if (monthHasPayments[monthId] === true) {
+                        totalRowHTML += `<td style="color: #27ae60; font-size: 12px; padding: 10px; border: 1px solid #ccc;">₹${runningBalance}</td>`;
+                    } else {
+                        totalRowHTML += `<td style="border: 1px solid #ccc;"></td>`;
                     }
                 }
             });
