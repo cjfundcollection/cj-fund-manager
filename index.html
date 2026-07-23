@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CJ fund</title>
     
-    <!-- PWA ENGINE DATA URI MANIFEST -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%22short_name%22%3A%22CJ%20Fund%22%2C%22name%22%3A%22CJ%20Friends%20Emergency%20Fund%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F2489%2F2489756.png%22%2C%22type%22%3A%22image%2Fpng%22%2C%22sizes%22%3A%22512x512%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22background_color%22%3A%22%231e0b36%22%2C%22theme_color%22%3A%22%233b1563%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%7D">
+    <!-- FAVICON ICON -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2489/2489756.png" type="image/png">
     <meta name="theme-color" content="#3b1563">
 
     <style>
@@ -310,12 +310,13 @@
     </div>
     <div class="input-group">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter password (Default is 1234)">
+        <!-- 🎯 ഇവിടെയാണ് மாற்றம் വരുത്തിയത് (Default is 1234 എന്നത് മാറ്റി) -->
+        <input type="password" id="password" placeholder="Enter password">
     </div>
     <button class="btn-primary" onclick="handleLogin()">Login</button>
 </div>
 
-<!-- 2. Force Password Change Screen -->
+<!-- 2. Force Password Change Screen (നിലനിർത്തിയിട്ടുണ്ട്) -->
 <div class="force-password-container" id="passwordChangePage">
     <h2>Security Update</h2>
     <p>You are logged in with the default password. Set a new personal password before accessing the dashboard.</p>
@@ -356,7 +357,7 @@
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
 
-        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART (LIGHT BACKGROUND) -->
+        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART -->
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
         <div style="overflow-x: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
@@ -383,7 +384,7 @@
             <button class="btn-refresh" onclick="location.reload()">🔄 Refresh</button>
             <h2 id="userWelcome">Name</h2>
             <p id="userPhone">📞 +91 00000 00000</p>
-            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px; display:inline-block;">ADMIN ACCESS</span>
+            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px;">ADMIN ACCESS</span>
         </div>
 
         <div id="statusBox" class="status-box due">
@@ -477,11 +478,6 @@
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v2'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob));
-    }
-
     const firebaseConfig = { apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ", authDomain: "cj-fund-manager.firebaseapp.com", projectId: "cj-fund-manager", storageBucket: "cj-fund-manager.firebasestorage.app", messagingSenderId: "786565291388", appId: "1:786565291388:web:e06abab3ce51a8d2b198f9" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -520,6 +516,7 @@
         }
     });
 
+    // 🎯 ലോഗിൻ ഫങ്ഷനിൽ 1234 അടിച്ചാൽ Force Password Change സപ്പോർട്ട് തുടരും
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -533,13 +530,19 @@
             } else if (!doc.exists && pass === "1234") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('passwordChangePage').style.display = 'block';
-            } else { alert("Wrong Password!"); }
+            } else { 
+                alert("Wrong Password!"); 
+            }
         });
     }
 
     function updatePassword() {
         const newPass = document.getElementById('newPassword').value.trim();
-        if (newPass === "" || newPass === "1234") { alert("Invalid Password!"); return; }
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+        
+        if (newPass === "" || newPass === "1234") { alert("Enter a strong password!"); return; }
+        if (newPass !== confirmPass) { alert("Passwords do not match!"); return; }
+
         db.collection("users").doc(currentLoggedInUser).set({ password: newPass }, { merge: true }).then(() => {
             localStorage.setItem("cj_active_user", currentLoggedInUser);
             document.getElementById('passwordChangePage').style.display = 'none';
@@ -908,7 +911,6 @@
         renderTable(liveTransactionsList.filter(item => item.date >= f && item.date <= t));
     }
 
-    // 🎯 PDF GENERATOR WITH IMMEDIATE DOWNLOAD & NOTIFICATION OPEN OPTION
     function downloadPDFStatement() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -944,11 +946,9 @@
 
         const fileName = currentFilter === 'matrix_chart' ? 'CJ_Fund_Monthly_Collection_Ledger.pdf' : 'CJ_Fund_Statement.pdf';
         
-        // PDF വിജയകരമായി Blob ഫയലാക്കി മാറ്റുന്നു
         const pdfBlob = doc.output('blob');
         const blobUrl = URL.createObjectURL(pdfBlob);
 
-        // ഡൗൺലോഡ് ആക്കാൻ ആങ്കർ ഉണ്ടാക്കുന്നു
         const downloadLink = document.createElement('a');
         downloadLink.href = blobUrl;
         downloadLink.download = fileName;
@@ -956,7 +956,6 @@
         downloadLink.click();
         document.body.removeChild(downloadLink);
 
-        // 🔔 SHOW NOTIFICATION WITH OPEN FILE ACTION
         const toast = document.getElementById('downloadToast');
         const openBtn = document.getElementById('openPdfBtn');
 
@@ -966,13 +965,11 @@
             window.open(blobUrl, '_blank');
         };
 
-        // 6 സെക്കൻഡിന് ശേഷം താനേ മാഞ്ഞുപോകും
         setTimeout(() => {
             toast.style.display = 'none';
         }, 6000);
     }
 
-    // 📊 1. ADMIN PANEL ANNUAL COLLECTION LEDGER
     function loadAdminAnnualLedger() {
         const headerRow = document.getElementById('ledgerHeader');
         headerRow.innerHTML = `<th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>`;
@@ -1044,7 +1041,6 @@
                 tbody.innerHTML += rowHTML;
             });
 
-            // TOTAL BALANCE ROW
             let totalRowHTML = `<tr style="background: #eaeded; font-weight: bold; border-top: 2px solid #333;">
                 <td style="text-align: left; padding: 10px; color: #333; border: 1px solid #ccc;">Total Balance</td>`;
             
@@ -1067,7 +1063,6 @@
         });
     }
 
-    // 📊 2. STATEMENT SELECT MONTH CHART RENDERER
     function renderMatrixChartInStatement() {
         db.collection("trackers").get().then((snapshot) => {
             let trackerData = {};
@@ -1153,7 +1148,6 @@
                 tbody.innerHTML += rowHTML;
             });
 
-            // TOTAL BALANCE ROW
             let totalRowHTML = `<tr style="background: #eaeded; font-weight: bold; border-top: 2px solid #333;">
                 <td style="text-align: left; padding: 10px; color: #333; border: 1px solid #ccc;">Total Balance</td>`;
             
