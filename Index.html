@@ -478,7 +478,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v2'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v3'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -581,7 +581,7 @@
         document.getElementById('userWelcome').innerText = user;
         document.getElementById('userPhone').innerText = `📞 ${userPhones[user] || '+91 00000 00000'}`;
         
-        // 📊 RECORD USER LOGIN TIME TO FIREBASE SILENTLY
+        // 📊 RECORD USER LOGIN TIME TO FIREBASE ALWAYS
         logUserActivity(user);
 
         if(user === SYSTEM_ADMIN_USER) {
