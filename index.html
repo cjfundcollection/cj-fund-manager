@@ -310,7 +310,6 @@
     </div>
     <div class="input-group">
         <label for="password">Password</label>
-        <!-- 🎯 REMOVED DEFAULT PASSWORD TEXT -->
         <input type="password" id="password" placeholder="Enter your password">
     </div>
     <button class="btn-primary" onclick="handleLogin()">Login</button>
@@ -479,7 +478,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v7'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v8'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -699,6 +698,7 @@
         });
     }
 
+    // 🎯 FIXED ADMIN CLEAR USER DUE LOGIC
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -748,13 +748,24 @@
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
         db.collection("trackers").doc(currentMonthId).onSnapshot(doc => {
-            if(!doc.exists && currentMonthId === "July2026") {
+            let paidList = [];
+            let pendingList = [...allMembersList];
+
+            if (doc.exists) {
+                const data = doc.data();
+                paidList = data.paid || [];
+                // 🎯 ALWAYS FALLBACK TO ALL MEMBERS FOR PENDING IF MISSING
+                pendingList = (data.pending && data.pending.length > 0) ? data.pending : allMembersList;
+            } else if (currentMonthId === "July2026") {
                 db.collection("trackers").doc("July2026").set({ paid: allMembersList, pending: [] });
-            } else {
-                currentMonthTrackerData = doc.exists ? doc.data() : { paid: [], pending: allMembersList };
-                renderPaidPendingTrackers(currentMonthTrackerData.paid || [], currentMonthTrackerData.pending || allMembersList);
-                updatePaymentStatusPanel(currentLoggedInUser);
+                paidList = allMembersList;
+                pendingList = [];
             }
+
+            currentMonthTrackerData = { paid: paidList, pending: pendingList };
+            renderPaidPendingTrackers(paidList, pendingList);
+            updatePaymentStatusPanel(currentLoggedInUser);
+
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
         });
     }
@@ -823,8 +834,9 @@
         adjustUPILinkForAmount();
     }
 
+    // 🎯 DYNAMIC TRACKER LIST COMPUTATION (ALWAYS REMOVES PAID MEMBERS FROM ALL MEMBERS)
     function renderPaidPendingTrackers(paid, rawPending) {
-        let filteredPending = rawPending.filter(member => !paid.includes(member));
+        let filteredPending = allMembersList.filter(member => !paid.includes(member));
         
         document.getElementById('paidCountText').innerText = `Paid (${paid.length})`;
         document.getElementById('pendingCountText').innerText = `Pending (${filteredPending.length})`;
