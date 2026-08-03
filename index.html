@@ -242,7 +242,6 @@
         .approval-item { border-bottom: 1px dashed rgba(255,255,255,0.2); padding: 12px 0; }
         .approval-buttons { display: flex; gap: 10px; margin-top: 8px; }
 
-        /* 🔔 DOWNLOAD NOTIFICATION BAR */
         .download-toast {
             display: none;
             position: fixed;
@@ -290,7 +289,6 @@
     📲 Install CJ Fund Official App
 </button>
 
-<!-- 🔔 DOWNLOAD SUCCESS TOAST NOTIFICATION -->
 <div class="download-toast" id="downloadToast">
     <span>✅ PDF downloaded successfully!</span>
     <button id="openPdfBtn">📄 Open File</button>
@@ -356,7 +354,6 @@
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
 
-        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART (LIGHT BACKGROUND) -->
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
         <div style="overflow-x: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
@@ -365,9 +362,7 @@
                         <th style="background: #3b1563; color: #ffd700; text-align: left; padding: 8px; border: 1px solid #ccc;">Members</th>
                     </tr>
                 </thead>
-                <tbody id="ledgerBody" style="background: #fff; color: #333;">
-                    <!-- Loaded dynamically via JS -->
-                </tbody>
+                <tbody id="ledgerBody" style="background: #fff; color: #333;"></tbody>
             </table>
         </div>
 
@@ -378,7 +373,6 @@
     </div>
 
     <div class="container">
-        <!-- 🔄 REFRESH BUTTON IN PROFILE HEADER -->
         <div class="user-profile-header">
             <button class="btn-refresh" onclick="location.reload()">🔄 Refresh</button>
             <h2 id="userWelcome">Name</h2>
@@ -399,23 +393,25 @@
             <h3 id="totalBalanceView">₹400</h3>
         </div>
 
-        <!-- 💳 DESIGNED PAYMENT SECTION -->
+        <!-- 💳 CLEAN SIMPLE PAYMENT SECTION (NO PRE-FILLED LINK CONFLICTS) -->
         <div id="paymentForm" class="payment-section">
-            <div style="background: rgba(255,215,0,0.1); padding:10px; border-radius:8px; border:1px dashed #ffd700; margin-bottom:15px;">
-                <label style="color:#ffd700; font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">Select Amount to Pay:</label>
-                <select id="userPayAmountSelector" onchange="adjustUPILinkForAmount()" style="color:#333; background:#fff; padding:8px; border-radius:6px; width:100%; font-weight:bold; font-size:15px;">
-                    <!-- Dynamic Options -->
+            
+            <div class="input-group">
+                <label style="color:#ffd700; font-size:13px; font-weight:bold;">Select Payment Amount:</label>
+                <select id="userPayAmountSelector" style="color:#333; background:#fff; font-weight:bold;">
                 </select>
             </div>
 
-            <p id="paymentFormNote" style="margin:0 0 10px 0; font-size:14px; color:#ddd;"></p>
-            
-            <!-- 📌 DIRECT UPI ID DISPLAY FOR MANUAL COPY IF APP FAILS -->
-            <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius:6px; margin-bottom: 12px; font-size: 12px; color: #ffd700; border: 1px solid rgba(255,215,0,0.3);">
-                <b>UPI ID:</b> <code>9895076221@sbi</code>
+            <!-- 📌 DIRECT UPI ID & COPY BUTTON -->
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius:10px; margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(255,215,0,0.3); display: flex; align-items: center; justify-content: space-between;">
+                <div style="text-align: left;">
+                    <span style="display:block; font-size:11px; color:#aaa;">Official UPI ID:</span>
+                    <strong style="color:#ffd700; font-size:16px;">9895076221@sbi</strong>
+                </div>
+                <button onclick="copyUpiId()" style="background:#ffd700; color:#333; border:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">📋 Copy ID</button>
             </div>
 
-            <a id="upiPayLink" href="#" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
+            <a id="upiPayLink" href="upi://pay?pa=9895076221@sbi&pn=CJFund" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
             
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee; font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
@@ -435,11 +431,9 @@
     <div class="container">
         <h3 style="color:#ffd700;">📊 Fund Statement</h3>
         
-        <!-- 🎯 SELECT MONTH DROPDOWN -->
         <div class="input-group">
             <label style="color:#eee">Select Month / Filter:</label>
             <select id="monthFilter" onchange="filterByMonth()" style="color:#333; background:#fff; font-weight:bold;">
-                <!-- Populated dynamically via setupStatementFilters() -->
             </select>
         </div>
 
@@ -449,19 +443,16 @@
         </div>
         <button class="btn-action" style="background: #555; margin-top: 5px; margin-bottom: 20px;" onclick="filterByCustomDate()">Filter Statement</button>
 
-        <!-- Dynamic Output Container -->
         <div id="printableStatementArea">
             <h4 id="pdfReportTitle" style="margin: 5px 0 10px 0; color: #3b1563; text-align: center; border-bottom: 2px solid #ffd700; padding-bottom: 5px; font-size: 15px;">
                 📋 Last 30 Days Transactions
             </h4>
             
-            <!-- Standard Transaction Table -->
             <table id="statementTable">
                 <thead><tr><th>Date</th><th>Name</th><th>Description</th><th>Amount</th></tr></thead>
                 <tbody id="statementBody"></tbody>
             </table>
 
-            <!-- Matrix Collection Chart Table -->
             <div id="matrixStatementWrapper" style="display:none; overflow-x: auto;">
                 <table id="matrixStatementTable" style="width: 100%; font-size: 11px; min-width: 650px; text-align: center; border-collapse: collapse;">
                     <thead>
@@ -474,7 +465,6 @@
             </div>
         </div>
 
-        <!-- 📥 DYNAMIC DOWNLOAD PDF BUTTON -->
         <button class="btn-action" style="background: #27ae60; color: white; margin-top: 15px; margin-bottom: 5px;" onclick="downloadPDFStatement()">📥 Download PDF</button>
 
         <button onclick="logout()" style="background:#ef4444; width:100%; border:none; padding:12px; border-radius:10px; color:white; font-weight:bold; font-size:16px; margin-top:15px; cursor:pointer;">Logout</button>
@@ -483,7 +473,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v9'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v11'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -505,6 +495,12 @@
         "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
+
+    function copyUpiId() {
+        navigator.clipboard.writeText("9895076221@sbi").then(() => {
+            alert("UPI ID copied to clipboard!");
+        });
+    }
 
     function requestAdminNotificationPermission() {
         if ("Notification" in window && Notification.permission !== "granted") {
@@ -773,25 +769,6 @@
         });
     }
 
-    // 🎯 ENHANCED UPI URL ENCODING FOR CLEAN APP LAUNCH
-    function adjustUPILinkForAmount() {
-        const amt = document.getElementById('userPayAmountSelector').value;
-        const user = currentLoggedInUser;
-        const note = document.getElementById('paymentFormNote');
-        
-        let labelText = "Advance Amount";
-        const selectedOption = document.getElementById('userPayAmountSelector').selectedOptions[0];
-        if (selectedOption && selectedOption.text.includes("Due")) {
-            labelText = "Due Amount";
-        }
-        
-        let monthsText = amt === "600" ? "1 Month" : `${Math.floor(amt/600)} Months`;
-        note.innerHTML = `Pay the <b>${labelText} (₹${amt})</b> for ${monthsText}.`;
-        
-        const cleanNote = encodeURIComponent(`${user}_CJFund`);
-        document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${cleanNote}`;
-    }
-
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
@@ -815,10 +792,10 @@
             
             if(amtSelector) {
                 amtSelector.innerHTML = `
-                    <option value="600">₹600 (1 Month Payment)</option>
-                    <option value="1200">₹1200 (2 Months Payment)</option>
-                    <option value="1800">₹1800 (3 Months Payment)</option>
-                    <option value="2400">₹2400 (4 Months Payment)</option>
+                    <option value="600">₹600 (1 Month Advance)</option>
+                    <option value="1200">₹1200 (2 Months Advance)</option>
+                    <option value="1800">₹1800 (3 Months Advance)</option>
+                    <option value="2400">₹2400 (4 Months Advance)</option>
                 `;
             }
         } else {
@@ -837,7 +814,8 @@
             }
         }
         
-        adjustUPILinkForAmount();
+        // Direct Clean UPI Link without conflicting amount parameters
+        document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund`;
     }
 
     function renderPaidPendingTrackers(paid, rawPending) {
