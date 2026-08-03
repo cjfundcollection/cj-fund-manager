@@ -94,6 +94,16 @@
             cursor: pointer; box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3); transition: 0.3s;
         }
 
+        .forgot-pass-link {
+            display: inline-block;
+            margin-top: 18px;
+            color: #ffd700;
+            font-size: 13px;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
         .force-password-container {
             display: none; width: 100%; max-width: 400px; background: white; padding: 30px;
             border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-top: auto;
@@ -174,8 +184,16 @@
         .text-green { color: #2ecc71; font-weight: bold; }
         .text-red { color: #ff4d4d; font-weight: bold; }
         
-        .approval-item { border-bottom: 1px dashed var(--card-border); padding: 12px 0; }
-        .approval-buttons { display: flex; gap: 10px; margin-top: 8px; }
+        .approval-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .approval-details { font-size: 13px; line-height: 1.6; text-align: left; }
+        .approval-details span { color: #ffd700; font-weight: bold; }
+        .approval-buttons { display: flex; gap: 10px; margin-top: 10px; }
 
         .download-toast {
             display: none; position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
@@ -199,7 +217,6 @@
 </head>
 <body>
 
-<!-- 🌓 DARK/LIGHT MODE TOGGLE BUTTON -->
 <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">☀️ Light Mode</button>
 
 <button class="install-banner" id="installBtn" onclick="triggerAppInstallation()">
@@ -228,6 +245,7 @@
         <input type="password" id="password" placeholder="Enter your password">
     </div>
     <button class="btn-primary" onclick="handleLogin()">Login</button>
+    <a class="forgot-pass-link" onclick="triggerForgotPasswordWhatsApp()">Forgot Password?</a>
 </div>
 
 <!-- 2. Force Password Change Screen -->
@@ -272,7 +290,7 @@
         </div>
 
         <h4 style="color: #ffd700; border-top: 1px dashed var(--card-border); padding-top:15px; margin-bottom: 10px;">📸 Pending Verification Pipeline</h4>
-        <div id="screenshotApprovalsContainer" style="font-size: 13px; max-height:300px; overflow-y:auto;">
+        <div id="screenshotApprovalsContainer" style="font-size: 13px; max-height:400px; overflow-y:auto;">
             <p style="color:#bbb; font-style:italic;">No active verification items in stream pipeline.</p>
         </div>
     </div>
@@ -298,13 +316,29 @@
             <h3 id="totalBalanceView">₹2800</h3>
         </div>
 
-        <!-- 💳 PAYMENT FORM SECTION -->
+        <!-- 💳 PAYMENT FORM SECTION (SIMPLIFIED - NO TRANSACTION ID) -->
         <div id="paymentForm" class="payment-section">
             
+            <!-- 1. YOUR DUE DISPLAY -->
+            <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 10px; border-radius: 10px; margin-bottom: 12px;">
+                <span style="font-size: 12px; color: #ddd; text-transform: uppercase;">Your Due Amount:</span>
+                <h3 id="paymentDueAmountText" style="margin: 3px 0 0 0; color: #ffd700; font-size: 24px;">₹600</h3>
+            </div>
+
+            <!-- 💡 INSTRUCTION BANNER -->
+            <div style="background: rgba(255, 215, 0, 0.12); border: 1px dashed #ffd700; padding: 12px; border-radius: 12px; margin-bottom: 15px; text-align: left;">
+                <p id="paymentFormInstructionText" style="margin: 0; font-size: 13px; color: #ffd700; font-weight: bold; line-height: 1.5;">
+                    📌 <b>How to Pay & Get Approval:</b><br>
+                    1. Copy the UPI ID below & pay using Google Pay / PhonePe.<br>
+                    2. Take a screenshot of the successful receipt.<br>
+                    3. Attach the screenshot below & click <b>Confirm Payment</b>.
+                </p>
+            </div>
+
+            <!-- 2. MANUAL AMOUNT INPUT -->
             <div class="input-group">
-                <label style="color:#ffd700; font-size:13px; font-weight:bold;">Select Payment Amount:</label>
-                <select id="userPayAmountSelector" style="color:#333; background:#fff; font-weight:bold;">
-                </select>
+                <label id="payAmountLabel" style="color:#ffd700; font-size:13px; font-weight:bold;">Enter Amount to Pay (₹):</label>
+                <input type="number" id="userPayAmountInput" placeholder="Enter amount (e.g. 600)" style="color:#333; background:#fff; font-weight:bold; font-size:16px;">
             </div>
 
             <!-- 📌 DIRECT UPI ID & COPY BUTTON -->
@@ -319,9 +353,12 @@
             <!-- 🎯 LAUNCH UPI APP -->
             <button onclick="openUpiAppDirectly()" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App</button>
             
-            <div class="input-group" style="margin-top:15px;"><label>Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
-            <div class="input-group" style="margin-top:15px;"><label style="font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
-            
+            <!-- 3. SCREENSHOT OPTION -->
+            <div class="input-group" style="margin-top:15px;">
+                <label style="font-weight:bold; color:#ffd700;">Attach Payment Screenshot:</label>
+                <input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;">
+            </div>
+
             <button class="btn-action" style="margin-top: 15px; background: #2ec4b6; box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);" onclick="submitTransaction()">Confirm Payment</button>
             <button class="btn-action" style="margin-top: 10px; background: rgba(255, 77, 77, 0.8); border: 1px solid #ff4d4d; box-shadow: none;" onclick="hidePaymentForm()">✖ Cancel / Back</button>
         </div>
@@ -379,7 +416,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v21'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v26'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -402,7 +439,6 @@
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
 
-    // 🌓 DARK/LIGHT MODE TOGGLE FUNCTION
     function toggleTheme() {
         const body = document.body;
         const btn = document.getElementById('themeToggleBtn');
@@ -417,7 +453,18 @@
         }
     }
 
-    // 🔔 WEB PUSH NOTIFICATION FUNCTION
+    function triggerForgotPasswordWhatsApp() {
+        const selectedUser = document.getElementById('username').value;
+        if (!selectedUser) {
+            alert("Please select your name first!");
+            return;
+        }
+
+        const adminPhoneNumber = "919633713902";
+        const message = encodeURIComponent(`Hi Jaisal, I forgot my CJ Fund app password. Please reset my account for ${selectedUser}.`);
+        window.open(`https://wa.me/${adminPhoneNumber}?text=${message}`, '_blank');
+    }
+
     function sendPushNotification(title, message) {
         if ("Notification" in window && Notification.permission === "granted") {
             new Notification(title, {
@@ -456,7 +503,6 @@
     window.addEventListener('DOMContentLoaded', () => {
         setupStatementFilters();
         
-        // Restore Saved Theme
         if (localStorage.getItem("cj_theme") === "light") {
             document.body.classList.add('light-mode');
             document.getElementById('themeToggleBtn').innerText = "🌙 Dark Mode";
@@ -482,7 +528,6 @@
         }
     });
 
-    // 🔑 UPDATED LOGIN LOGIC (DYNAMIC DEFAULT PASSWORD AND RESET SUPPORT)
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -495,14 +540,12 @@
         currentLoggedInUser = selectedUser;
 
         db.collection("users").doc(selectedUser).get().then((doc) => {
-            // CASE 1: ടൈപ്പ് ചെയ്തത് "1234" ആണെങ്കിൽ നേരെ Force Password Change പേജിലേക്ക് മാറ്റും
             if (pass === "1234") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('passwordChangePage').style.display = 'block';
                 return;
             }
 
-            // CASE 2: ഫയർബേസിൽ അക്കൗണ്ട് നിലവിലുണ്ടെങ്കിൽ
             if (doc.exists) {
                 const storedPassword = doc.data().password;
 
@@ -513,7 +556,6 @@
                     alert("Wrong Password! Please try again.");
                 }
             } 
-            // CASE 3: ഫയർബേസിൽ നിന്ന് യൂസറെ ഡിലീറ്റ് ചെയ്തതാണെങ്കിൽ
             else {
                 alert("Account reset detected. Please login using default password '1234' to set your new password!");
             }
@@ -603,7 +645,7 @@
             if(!container) return; container.innerHTML = "";
             
             if(snapshot.empty) { 
-                container.innerHTML = `<p style="color:#bbb; font-style:italic;">No pending items.</p>`; 
+                container.innerHTML = `<p style="color:#bbb; font-style:italic;">No pending verification items.</p>`; 
                 initialApprovalCount = 0;
                 return; 
             }
@@ -616,14 +658,22 @@
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                let imgTag = data.screenshot ? `<img src="${data.screenshot}" style="max-width:120px; display:block; margin:5px 0; border-radius:6px; cursor:pointer;" onclick="window.open('${data.screenshot}')"/>` : "";
-                container.innerHTML += `<div class="approval-item">
-                    <p style="margin:2px 0;"><b>${data.username}</b> (₹${data.amount})</p>
-                    <p style="margin:2px 0; font-size:11px; color:#ccc;">UTR: ${data.txnId || 'N/A'}</p>
-                    ${imgTag}
+                let imgTag = data.screenshot ? `<img src="${data.screenshot}" style="max-width:140px; border-radius:8px; margin-top:8px; cursor:pointer; border:1px solid #ffd700;" onclick="window.open('${data.screenshot}')"/>` : `<span style="color:#aaa; font-style:italic;">No Screenshot Attached</span>`;
+                
+                let targetMonthDisplay = data.targetMonth ? data.targetMonth.replace("2026", " 2026").replace("2027", " 2027") : "Auto Month";
+
+                container.innerHTML += `
+                <div class="approval-card">
+                    <div class="approval-details">
+                        <div>👤 <b>Member:</b> <span>${data.username}</span></div>
+                        <div>💰 <b>Amount:</b> <span style="color:#2ecc71;">₹${data.amount}</span></div>
+                        <div>📅 <b>Target Month:</b> <span>${targetMonthDisplay}</span></div>
+                        <div>🖼️ <b>Proof Screenshot:</b></div>
+                        <div>${imgTag}</div>
+                    </div>
                     <div class="approval-buttons">
-                        <button class="btn-action" style="background:#2ecc71; padding:6px; font-size:12px; margin-top:5px; width:80px;" onclick="processApproval('${doc.id}', true)">Approve</button>
-                        <button class="btn-action" style="background:#ff4d4d; padding:6px; font-size:12px; margin-top:5px; width:80px;" onclick="processApproval('${doc.id}', false)">Reject</button>
+                        <button class="btn-action" style="background:#2ecc71; padding:8px; font-size:13px; margin-top:5px;" onclick="processApproval('${doc.id}', true)">Approve ✅</button>
+                        <button class="btn-action" style="background:#ff4d4d; padding:8px; font-size:13px; margin-top:5px;" onclick="processApproval('${doc.id}', false)">Reject ✖</button>
                     </div>
                 </div>`;
             });
@@ -698,6 +748,7 @@
                 db.collection("approvals").doc(id).delete().then(() => {
                     sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${totalPaidAmount} has been recorded.`);
                     alert(`Approved successfully for ${app.username}!`);
+                    
                     loadAdminAnnualLedger();
                     updateAdminAvailableMonths();
                 });
@@ -805,7 +856,10 @@
         const txt = document.getElementById('statusText');
         const sub = document.getElementById('statusSubText');
         const btn = document.getElementById('payNowBtn');
-        const amtSelector = document.getElementById('userPayAmountSelector');
+        const dueText = document.getElementById('paymentDueAmountText');
+        const amtInput = document.getElementById('userPayAmountInput');
+        const payLabel = document.getElementById('payAmountLabel');
+        const instructionBox = document.getElementById('paymentFormInstructionText');
 
         const dObj = new Date();
         const thisMonth = dObj.toLocaleString('default', { month: 'long' });
@@ -816,30 +870,47 @@
 
         if (isPaidThisMonth) {
             box.className = "status-box paid"; sig.className = "signal green";
-            txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} payment done</span>`;
-            sub.innerHTML = `✨ Next Month Advance Window Open`; sub.style.display = "block";
-            btn.innerText = "Pay Now"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
+            txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} Payment Done</span>`;
             
-            if(amtSelector) {
-                amtSelector.innerHTML = `
-                    <option value="600">₹600 (1 Month Advance)</option>
-                    <option value="1200">₹1200 (2 Months Advance)</option>
-                    <option value="1800">₹1800 (3 Months Advance)</option>
-                    <option value="2400">₹2400 (4 Months Advance)</option>
+            sub.innerHTML = `🎉 All Dues Cleared! Pay Advance for Next Month`; 
+            sub.style.display = "block";
+            
+            btn.innerText = "Pay Advance"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
+            
+            if(dueText) dueText.innerText = "₹0 (Fully Paid)";
+            if(payLabel) payLabel.innerText = "Enter Advance Amount (₹):";
+            if(amtInput) {
+                amtInput.value = 600;
+                amtInput.placeholder = "Enter advance amount (e.g. 600)";
+            }
+
+            if(instructionBox) {
+                instructionBox.innerHTML = `
+                    📌 <b>Advance Payment Guide:</b><br>
+                    1. You have zero pending dues! Pay advance for upcoming months.<br>
+                    2. Copy UPI ID below & transfer the advance amount.<br>
+                    3. Attach receipt screenshot & click <b>Confirm Payment</b>.
                 `;
             }
         } else {
             box.className = "status-box due"; sig.className = "signal red";
-            txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} payment due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
+            txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} Payment Due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
             
-            if(amtSelector) {
-                amtSelector.innerHTML = `
-                    <option value="600">₹600 (${thisMonth} Due)</option>
-                    <option value="1200">₹1200 (2 Months Payment)</option>
-                    <option value="1800">₹1800 (3 Months Payment)</option>
-                    <option value="2400">₹2400 (4 Months Payment)</option>
+            if(dueText) dueText.innerText = "₹600";
+            if(payLabel) payLabel.innerText = "Enter Amount to Pay (₹):";
+            if(amtInput) {
+                amtInput.value = 600;
+                amtInput.placeholder = "Enter amount (e.g. 600)";
+            }
+
+            if(instructionBox) {
+                instructionBox.innerHTML = `
+                    📌 <b>How to Pay & Get Approval:</b><br>
+                    1. Copy the UPI ID below & pay using Google Pay / PhonePe.<br>
+                    2. Take a screenshot of the successful receipt.<br>
+                    3. Attach the screenshot below & click <b>Confirm Payment</b>.
                 `;
             }
         }
@@ -865,23 +936,23 @@
     }
 
     function submitTransaction() {
-        const txnId = document.getElementById('txnId').value.trim();
         const file = document.getElementById('screenshotFile').files[0];
-        const selectedAmt = parseInt(document.getElementById('userPayAmountSelector').value);
+        const selectedAmt = parseInt(document.getElementById('userPayAmountInput').value);
 
-        if(!txnId) { alert("Enter valid Transaction ID"); return; }
+        if(!selectedAmt || selectedAmt <= 0) { alert("Please enter a valid amount!"); return; }
+
+        const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
 
         const send = (base64 = null) => {
             db.collection("approvals").add({
                 username: currentLoggedInUser,
                 amount: selectedAmt, 
+                targetMonth: currentMonthId,
                 screenshot: base64,
-                txnId: txnId,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 alert("Proof submitted successfully!");
                 hidePaymentForm();
-                document.getElementById('txnId').value = "";
                 document.getElementById('screenshotFile').value = "";
             });
         };
