@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CJ fund</title>
     
-    <!-- FAVICON ICON -->
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2489/2489756.png" type="image/png">
+    <!-- PWA ENGINE DATA URI MANIFEST -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22short_name%22%3A%22CJ%20Fund%22%2C%22name%22%3A%22CJ%20Friends%20Emergency%20Fund%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F2489%2F2489756.png%22%2C%22type%22%3A%22image%2Fpng%22%2C%22sizes%22%3A%22512x512%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22background_color%22%3A%22%231e0b36%22%2C%22theme_color%22%3A%22%233b1563%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%7D">
     <meta name="theme-color" content="#3b1563">
 
     <style>
@@ -310,13 +310,12 @@
     </div>
     <div class="input-group">
         <label for="password">Password</label>
-        <!-- 🎯 ഇവിടെയാണ് மாற்றம் വരുത്തിയത് (Default is 1234 എന്നത് മാറ്റി) -->
-        <input type="password" id="password" placeholder="Enter password">
+        <input type="password" id="password" placeholder="Enter password (Default is 1234)">
     </div>
     <button class="btn-primary" onclick="handleLogin()">Login</button>
 </div>
 
-<!-- 2. Force Password Change Screen (നിലനിർത്തിയിട്ടുണ്ട്) -->
+<!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
     <h2>Security Update</h2>
     <p>You are logged in with the default password. Set a new personal password before accessing the dashboard.</p>
@@ -357,7 +356,7 @@
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
 
-        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART -->
+        <!-- 📊 1-YEAR ANNUAL COLLECTION LEDGER CHART (LIGHT BACKGROUND) -->
         <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
         <div style="overflow-x: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
@@ -384,7 +383,7 @@
             <button class="btn-refresh" onclick="location.reload()">🔄 Refresh</button>
             <h2 id="userWelcome">Name</h2>
             <p id="userPhone">📞 +91 00000 00000</p>
-            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px;">ADMIN ACCESS</span>
+            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px; display:inline-block;">ADMIN ACCESS</span>
         </div>
 
         <div id="statusBox" class="status-box due">
@@ -478,6 +477,11 @@
 </div>
 
 <script>
+    if ('serviceWorker' in navigator) {
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v5'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+    }
+
     const firebaseConfig = { apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ", authDomain: "cj-fund-manager.firebaseapp.com", projectId: "cj-fund-manager", storageBucket: "cj-fund-manager.firebasestorage.app", messagingSenderId: "786565291388", appId: "1:786565291388:web:e06abab3ce51a8d2b198f9" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -490,11 +494,36 @@
     let currentMonthTrackerData = { paid: [], pending: ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"] };
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
     const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
+    let initialApprovalCount = null;
 
     const orderedTimelineMonths = [
         "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
+
+    function requestAdminNotificationPermission() {
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+    }
+
+    function triggerAdminNotification(username, amount) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("💰 CJ Fund: New Payment Request!", {
+                body: `${username} has submitted a payment of ₹${amount}. Tap to review!`,
+                icon: "https://cdn-icons-png.flaticon.com/512/2489/2489756.png"
+            });
+        }
+    }
+
+    function logUserActivity(user) {
+        if(!user) return;
+        db.collection("user_logs").doc(user).set({
+            username: user,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+            lastSeenFormatted: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+        }, { merge: true }).catch(err => console.log("Log error:", err));
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
         setupStatementFilters();
@@ -516,7 +545,6 @@
         }
     });
 
-    // 🎯 ലോഗിൻ ഫങ്ഷനിൽ 1234 അടിച്ചാൽ Force Password Change സപ്പോർട്ട് തുടരും
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -530,19 +558,13 @@
             } else if (!doc.exists && pass === "1234") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('passwordChangePage').style.display = 'block';
-            } else { 
-                alert("Wrong Password!"); 
-            }
+            } else { alert("Wrong Password!"); }
         });
     }
 
     function updatePassword() {
         const newPass = document.getElementById('newPassword').value.trim();
-        const confirmPass = document.getElementById('confirmPassword').value.trim();
-        
-        if (newPass === "" || newPass === "1234") { alert("Enter a strong password!"); return; }
-        if (newPass !== confirmPass) { alert("Passwords do not match!"); return; }
-
+        if (newPass === "" || newPass === "1234") { alert("Invalid Password!"); return; }
         db.collection("users").doc(currentLoggedInUser).set({ password: newPass }, { merge: true }).then(() => {
             localStorage.setItem("cj_active_user", currentLoggedInUser);
             document.getElementById('passwordChangePage').style.display = 'none';
@@ -556,6 +578,8 @@
         document.getElementById('userWelcome').innerText = user;
         document.getElementById('userPhone').innerText = `📞 ${userPhones[user] || '+91 00000 00000'}`;
         
+        logUserActivity(user);
+
         if(user === SYSTEM_ADMIN_USER) {
             document.getElementById('adminBadge').style.display = 'inline-block';
             document.getElementById('adminControlPanelCard').style.display = 'block';
@@ -566,6 +590,7 @@
             if(monthDropdown && [...monthDropdown.options].some(o => o.value === currentMonthId)) {
                 monthDropdown.value = currentMonthId;
             }
+            requestAdminNotificationPermission();
             listenForPendingApprovals();
             loadAdminAnnualLedger();
         }
@@ -576,7 +601,18 @@
         db.collection("approvals").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
             const container = document.getElementById("screenshotApprovalsContainer");
             if(!container) return; container.innerHTML = "";
-            if(snapshot.empty) { container.innerHTML = `<p style="color:#bbb; font-style:italic;">No pending items.</p>`; return; }
+            
+            if(snapshot.empty) { 
+                container.innerHTML = `<p style="color:#bbb; font-style:italic;">No pending items.</p>`; 
+                initialApprovalCount = 0;
+                return; 
+            }
+
+            if(initialApprovalCount !== null && snapshot.docs.length > initialApprovalCount) {
+                const latestDoc = snapshot.docs[snapshot.docs.length - 1].data();
+                triggerAdminNotification(latestDoc.username, latestDoc.amount);
+            }
+            initialApprovalCount = snapshot.docs.length;
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
@@ -635,10 +671,11 @@
                 let batch = db.batch();
                 targetedMonthsToUpdate.forEach(mId => {
                     let ref = db.collection("trackers").doc(mId);
-                    batch.update(ref, {
+                    // 🎯 STRICT: ADD TO PAID AND REMOVE FROM PENDING
+                    batch.set(ref, {
                         paid: firebase.firestore.FieldValue.arrayUnion(app.username),
                         pending: firebase.firestore.FieldValue.arrayRemove(app.username)
-                    });
+                    }, { merge: true });
                 });
 
                 db.collection("dues").doc(app.username).set({ months: [] });
@@ -671,14 +708,10 @@
 
         db.collection("dues").doc(u).set({ months: [] });
         
-        db.collection("trackers").doc(m).update({
+        db.collection("trackers").doc(m).set({
             paid: firebase.firestore.FieldValue.arrayUnion(u),
             pending: firebase.firestore.FieldValue.arrayRemove(u)
-        }).catch(() => {
-            let paidArr = [u];
-            let pendArr = allMembersList.filter(item => item !== u);
-            return db.collection("trackers").doc(m).set({ paid: paidArr, pending: pendArr });
-        });
+        }, { merge: true });
 
         db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(MONTHLY_SUBSCRIPTION_AMOUNT) });
         
@@ -755,9 +788,9 @@
 
         document.getElementById('monthTrackerTitle').innerText = `${thisMonth} ${dObj.getFullYear()} Tracker`;
 
-        let isPendingThisMonth = currentMonthTrackerData.pending && currentMonthTrackerData.pending.includes(user);
+        let isPaidThisMonth = currentMonthTrackerData.paid && currentMonthTrackerData.paid.includes(user);
 
-        if (!isPendingThisMonth) {
+        if (isPaidThisMonth) {
             box.className = "status-box paid"; sig.className = "signal green";
             txt.innerHTML = `<span style="color:#2ecc71;">${thisMonth} payment done</span>`;
             sub.innerHTML = `✨ Next Month Advance Window Open`; sub.style.display = "block";
@@ -790,11 +823,15 @@
         adjustUPILinkForAmount();
     }
 
-    function renderPaidPendingTrackers(paid, pending) {
+    // 🎯 STRICT DUPICATE FILTER FOR TRACKER UI
+    function renderPaidPendingTrackers(paid, rawPending) {
+        // paid ലിസ്റ്റിലുള്ളവരെ pending ലിസ്റ്റിൽ നിന്ന് ഒഴിവാക്കുന്നു
+        let filteredPending = rawPending.filter(member => !paid.includes(member));
+        
         document.getElementById('paidCountText').innerText = `Paid (${paid.length})`;
-        document.getElementById('pendingCountText').innerText = `Pending (${pending.length})`;
+        document.getElementById('pendingCountText').innerText = `Pending (${filteredPending.length})`;
         document.getElementById('paidBadgeList').innerHTML = paid.map(n => `<span class="badge paid">✓ ${n}</span>`).join('');
-        document.getElementById('pendingBadgeList').innerHTML = pending.map(n => `<span class="badge pending">⏳ ${n}</span>`).join('');
+        document.getElementById('pendingBadgeList').innerHTML = filteredPending.map(n => `<span class="badge pending">⏳ ${n}</span>`).join('');
     }
 
     function showPaymentForm() { 
