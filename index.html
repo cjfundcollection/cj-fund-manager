@@ -408,8 +408,13 @@
                 </select>
             </div>
 
-            <p id="paymentFormNote" style="margin:0 0 15px 0; font-size:14px; color:#ddd;"></p>
+            <p id="paymentFormNote" style="margin:0 0 10px 0; font-size:14px; color:#ddd;"></p>
             
+            <!-- 📌 DIRECT UPI ID DISPLAY FOR MANUAL COPY IF APP FAILS -->
+            <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius:6px; margin-bottom: 12px; font-size: 12px; color: #ffd700; border: 1px solid rgba(255,215,0,0.3);">
+                <b>UPI ID:</b> <code>9895076221@sbi</code>
+            </div>
+
             <a id="upiPayLink" href="#" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App & Pay</a>
             
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
@@ -478,7 +483,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v8'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v9'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -698,7 +703,6 @@
         });
     }
 
-    // 🎯 FIXED ADMIN CLEAR USER DUE LOGIC
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -754,7 +758,6 @@
             if (doc.exists) {
                 const data = doc.data();
                 paidList = data.paid || [];
-                // 🎯 ALWAYS FALLBACK TO ALL MEMBERS FOR PENDING IF MISSING
                 pendingList = (data.pending && data.pending.length > 0) ? data.pending : allMembersList;
             } else if (currentMonthId === "July2026") {
                 db.collection("trackers").doc("July2026").set({ paid: allMembersList, pending: [] });
@@ -770,6 +773,7 @@
         });
     }
 
+    // 🎯 ENHANCED UPI URL ENCODING FOR CLEAN APP LAUNCH
     function adjustUPILinkForAmount() {
         const amt = document.getElementById('userPayAmountSelector').value;
         const user = currentLoggedInUser;
@@ -783,7 +787,9 @@
         
         let monthsText = amt === "600" ? "1 Month" : `${Math.floor(amt/600)} Months`;
         note.innerHTML = `Pay the <b>${labelText} (₹${amt})</b> for ${monthsText}.`;
-        document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${user}%20Payment`;
+        
+        const cleanNote = encodeURIComponent(`${user}_CJFund`);
+        document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${cleanNote}`;
     }
 
     function updatePaymentStatusPanel(user) {
@@ -834,7 +840,6 @@
         adjustUPILinkForAmount();
     }
 
-    // 🎯 DYNAMIC TRACKER LIST COMPUTATION (ALWAYS REMOVES PAID MEMBERS FROM ALL MEMBERS)
     function renderPaidPendingTrackers(paid, rawPending) {
         let filteredPending = allMembersList.filter(member => !paid.includes(member));
         
