@@ -23,46 +23,21 @@
         }
 
         .install-banner {
-            display: none;
-            width: 100%;
-            max-width: 400px;
+            display: none; width: 100%; max-width: 400px;
             background: linear-gradient(90deg, #ff9f43, #ff5252);
-            padding: 12px;
-            border-radius: 12px;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
-            cursor: pointer;
-            border: none;
-            font-size: 15px;
-            animation: fadeIn 0.5s ease-in-out;
+            padding: 12px; border-radius: 12px; color: white; font-weight: bold;
+            text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
+            cursor: pointer; border: none; font-size: 15px; animation: fadeIn 0.5s ease-in-out;
         }
 
         .login-container {
-            width: 100%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 35px 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            margin-top: auto;
-            margin-bottom: auto;
-            text-align: center;
-            box-sizing: border-box;
+            width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); padding: 35px 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-top: auto; margin-bottom: auto; text-align: center; box-sizing: border-box;
         }
 
-        .login-container h1 {
-            color: #ffd700;
-            font-size: 36px;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
-            letter-spacing: 1px;
-        }
-
+        .login-container h1 { color: #ffd700; font-size: 36px; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3); letter-spacing: 1px; }
         .login-container p { color: #ddd; font-size: 14px; margin-top: 0; margin-bottom: 30px; }
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #eee; }
@@ -232,24 +207,14 @@
 
         <div class="input-group">
             <label style="color:#eee;">Select Member Name:</label>
-            <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
+            <!-- Added onchange listener to update target months dynamically -->
+            <select id="adminTargetUser" onchange="updateAdminAvailableMonths()" style="color:#333; background:#fff;"></select>
         </div>
 
         <div class="input-group">
             <label style="color:#eee;">Select Target Month:</label>
             <select id="adminTargetMonth" style="color:#333; background:#fff;">
-                <option value="July2026">July 2026</option>
-                <option value="August2026">August 2026</option>
-                <option value="September2026">September 2026</option>
-                <option value="October2026">October 2026</option>
-                <option value="November2026">November 2026</option>
-                <option value="December2026">December 2026</option>
-                <option value="January2027">January 2027</option>
-                <option value="February2027">February 2027</option>
-                <option value="March2027">March 2027</option>
-                <option value="April2027">April 2027</option>
-                <option value="May2027">May 2027</option>
-                <option value="June2027">June 2027</option>
+                <!-- Populated dynamically via updateAdminAvailableMonths() -->
             </select>
         </div>
 
@@ -291,7 +256,7 @@
 
         <div class="balance-box">
             <span>Total Fund Balance</span>
-            <h3 id="totalBalanceView">₹400</h3>
+            <h3 id="totalBalanceView">₹2200</h3>
         </div>
 
         <!-- 💳 PAYMENT FORM SECTION -->
@@ -375,7 +340,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v16'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v18'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -441,6 +406,8 @@
             loginToDashboard(sessionUsername); 
 
             if (sessionUsername === "Jaisal") {
+                db.collection("metadata").doc("fundSummary").set({ totalBalance: 2200 }, { merge: true });
+
                 db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
                     snapshot.forEach((doc) => { doc.ref.delete(); });
                 });
@@ -493,16 +460,45 @@
             document.getElementById('adminControlPanelCard').style.display = 'block';
             document.getElementById('adminTargetUser').innerHTML = allMembersList.map(m=>`<option value="${m}">${m}</option>`).join('');
             
-            const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
-            const monthDropdown = document.getElementById('adminTargetMonth');
-            if(monthDropdown && [...monthDropdown.options].some(o => o.value === currentMonthId)) {
-                monthDropdown.value = currentMonthId;
-            }
             requestAdminNotificationPermission();
             listenForPendingApprovals();
             loadAdminAnnualLedger();
+            updateAdminAvailableMonths(); // Initialize dynamic month dropdown
         }
         fetchLiveDatabaseContent(user);
+    }
+
+    // 🎯 DYNAMIC MONTH FILTER: Shows ONLY Unpaid & Future months for the selected member
+    function updateAdminAvailableMonths() {
+        const selectedUser = document.getElementById('adminTargetUser').value;
+        const monthDropdown = document.getElementById('adminTargetMonth');
+        if(!selectedUser || !monthDropdown) return;
+
+        db.collection("trackers").get().then((snapshot) => {
+            let trackerMap = {};
+            snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
+
+            let availableOptionsHTML = "";
+
+            orderedTimelineMonths.forEach(mId => {
+                if (mId === "July2026") return; // July is fixed/closed
+
+                let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
+                let docData = trackerMap[mId] || trackerMap[spacedMonthId] || { paid: [] };
+
+                // Only add if the user HAS NOT paid for this month yet
+                if (!docData.paid || !docData.paid.includes(selectedUser)) {
+                    let displayMonth = mId.replace("2026", " 2026").replace("2027", " 2027");
+                    availableOptionsHTML += `<option value="${mId}">${displayMonth}</option>`;
+                }
+            });
+
+            if (availableOptionsHTML === "") {
+                monthDropdown.innerHTML = `<option value="">All Months Fully Paid! 🎉</option>`;
+            } else {
+                monthDropdown.innerHTML = availableOptionsHTML;
+            }
+        });
     }
 
     function listenForPendingApprovals() {
@@ -538,7 +534,6 @@
         });
     }
 
-    // 🎯 ENHANCED PROCESS APPROVAL WITH DUAL MONTH MATCHING & ACCURATE TRACKER CLEANUP
     function processApproval(id, isApprove) {
         if(!isApprove) { 
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
@@ -582,7 +577,6 @@
                 let batch = db.batch();
                 targetedMonthsToUpdate.forEach(mId => {
                     let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
-                    
                     let targetDocId = trackerMap[spacedMonthId] ? spacedMonthId : mId;
                     let ref = db.collection("trackers").doc(targetDocId);
                     
@@ -612,18 +606,18 @@
                 db.collection("approvals").doc(id).delete().then(() => {
                     alert(`Approved successfully for ${app.username} (${monthsToCreditCount} Months Credit)!`);
                     loadAdminAnnualLedger();
+                    updateAdminAvailableMonths(); // Refresh dropdown list after approval
                 });
             });
         });
     }
 
-    // 🎯 PREVENT DUPLICATE AMOUNT ADDITION & CLEAN UP PENDING LIST
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
         
         if(!u) { alert("Select a member!"); return; }
-        if(!m) { alert("Select a month!"); return; }
+        if(!m) { alert("No valid unpaid month selected!"); return; }
 
         let spacedMonthId = m.replace("2026", " 2026").replace("2027", " 2027");
 
@@ -635,7 +629,7 @@
             let docData = trackerMap[targetDocId] || { paid: [], pending: [...allMembersList] };
 
             if (docData.paid && docData.paid.includes(u)) {
-                alert(`${u} is already marked as PAID for ${spacedMonthId}! Duplicate payment avoided.`);
+                alert(`${u} is already marked as PAID for ${spacedMonthId}!`);
                 return;
             }
 
@@ -663,13 +657,14 @@
 
                 alert(`Cleared ${spacedMonthId} successfully for ${u}!`);
                 loadAdminAnnualLedger();
+                updateAdminAvailableMonths(); // Refresh dropdown list after payment
             });
         });
     }
 
     function fetchLiveDatabaseContent(user) {
         db.collection("metadata").doc("fundSummary").onSnapshot(doc => {
-            document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 400}`;
+            document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 2200}`;
         });
 
         db.collection("transactions").orderBy("date", "desc").onSnapshot(snap => {
@@ -677,7 +672,10 @@
             if(liveTransactionsList.length === 0) liveTransactionsList = [{ date: '2026-07-31', name: 'July Balance', type: 'Credit', desc: 'Closing Balance', status: 'Paid', amount: 400 }];
             
             filterByMonth();
-            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
+            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { 
+                loadAdminAnnualLedger();
+                updateAdminAvailableMonths();
+            }
         });
 
         db.collection("dues").doc(user).onSnapshot(doc => {
@@ -705,7 +703,10 @@
             renderPaidPendingTrackers(paidList, pendingList);
             updatePaymentStatusPanel(currentLoggedInUser);
 
-            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { loadAdminAnnualLedger(); }
+            if(currentLoggedInUser === SYSTEM_ADMIN_USER) { 
+                loadAdminAnnualLedger();
+                updateAdminAvailableMonths();
+            }
         });
     }
 
