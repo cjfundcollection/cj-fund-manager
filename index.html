@@ -10,9 +10,32 @@
     <meta name="theme-color" content="#3b1563">
 
     <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e0b36 0%, #3b1563 50%, #631975 100%);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --card-border: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+            --subtext-color: #ddd;
+            --input-bg: rgba(255, 255, 255, 0.08);
+            --table-header-bg: #3b1563;
+            --table-header-color: #ffd700;
+        }
+
+        body.light-mode {
+            --bg-gradient: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            --card-bg: #ffffff;
+            --card-border: #d1d5db;
+            --text-color: #1f2937;
+            --subtext-color: #4b5563;
+            --input-bg: #f9fafb;
+            --table-header-bg: #4f46e5;
+            --table-header-color: #ffffff;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e0b36 0%, #3b1563 50%, #631975 100%);
+            background: var(--bg-gradient);
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
@@ -20,6 +43,24 @@
             align-items: center;
             min-height: 100vh;
             box-sizing: border-box;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .theme-toggle-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         .install-banner {
@@ -31,22 +72,21 @@
         }
 
         .login-container {
-            width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.1);
+            width: 100%; max-width: 400px; background: var(--card-bg);
             backdrop-filter: blur(10px); padding: 35px 25px; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid var(--card-border);
             margin-top: auto; margin-bottom: auto; text-align: center; box-sizing: border-box;
         }
 
         .login-container h1 { color: #ffd700; font-size: 36px; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3); letter-spacing: 1px; }
-        .login-container p { color: #ddd; font-size: 14px; margin-top: 0; margin-bottom: 30px; }
+        .login-container p { color: var(--subtext-color); font-size: 14px; margin-top: 0; margin-bottom: 30px; }
         .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #eee; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color); }
         .input-group input, .input-group select {
-            width: 100%; padding: 12px 15px; border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 10px; box-sizing: border-box; background: rgba(255, 255, 255, 0.08);
-            color: white; font-size: 16px; outline: none;
+            width: 100%; padding: 12px 15px; border: 1px solid var(--card-border);
+            border-radius: 10px; box-sizing: border-box; background: var(--input-bg);
+            color: #333; font-size: 16px; outline: none;
         }
-        .input-group select option { color: #333; background: #fff; }
 
         .btn-primary {
             width: 100%; padding: 14px; background: linear-gradient(90deg, #ff007f, #7f00ff);
@@ -68,22 +108,21 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .container {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box;
+            background: var(--card-bg); backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border); padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px; box-sizing: border-box;
         }
 
         .user-profile-header { text-align: center; margin-bottom: 15px; position: relative; }
         .user-profile-header h2 { color: #ffd700; font-size: 26px; text-shadow: 0 2px 10px rgba(255, 215, 0, 0.2); margin: 0; }
-        .user-profile-header p { margin: 5px 0 0 0; color: #ddd; font-size: 14px; }
+        .user-profile-header p { margin: 5px 0 0 0; color: var(--subtext-color); font-size: 14px; }
 
         .btn-refresh {
-            position: absolute; right: 0; top: 0; background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25); color: #ffd700; padding: 5px 12px;
+            position: absolute; left: 0; top: 0; background: rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--card-border); color: #ffd700; padding: 5px 12px;
             border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold;
             display: flex; align-items: center; gap: 4px; transition: 0.2s;
         }
-        .btn-refresh:hover { background: rgba(255, 255, 255, 0.25); }
 
         .status-box {
             background: rgba(255, 255, 255, 0.08); padding: 18px 15px; border-radius: 14px;
@@ -117,7 +156,7 @@
             border: none; border-radius: 10px; font-size: 16px; cursor: pointer; text-decoration: none; box-sizing: border-box; font-weight: bold; margin-top: 15px;
         }
 
-        .payment-section { display: none; margin-top: 20px; padding: 15px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.05); text-align: center; }
+        .payment-section { display: none; margin-top: 20px; padding: 15px; border: 1px solid var(--card-border); border-radius: 8px; background: rgba(255, 255, 255, 0.05); text-align: center; }
         .summary-list-title { font-size: 15px; font-weight: bold; color: #ffd700; margin-top: 15px; margin-bottom: 10px; }
         .member-badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
 
@@ -127,7 +166,6 @@
 
         .filter-row { display: flex; gap: 10px; margin-bottom: 15px; }
         .filter-row .input-group { flex: 1; margin-bottom: 0; }
-        .filter-row .input-group label { color: #ddd; }
 
         #printableStatementArea { background: rgba(255,255,255,0.95); padding: 15px; border-radius: 12px; color: #333; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
@@ -136,7 +174,7 @@
         .text-green { color: #2ecc71; font-weight: bold; }
         .text-red { color: #ff4d4d; font-weight: bold; }
         
-        .approval-item { border-bottom: 1px dashed rgba(255,255,255,0.2); padding: 12px 0; }
+        .approval-item { border-bottom: 1px dashed var(--card-border); padding: 12px 0; }
         .approval-buttons { display: flex; gap: 10px; margin-top: 8px; }
 
         .download-toast {
@@ -160,6 +198,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
+<!-- 🌓 DARK/LIGHT MODE TOGGLE BUTTON -->
+<button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">☀️ Light Mode</button>
 
 <button class="install-banner" id="installBtn" onclick="triggerAppInstallation()">
     📲 Install CJ Fund Official App
@@ -206,19 +247,19 @@
         <h3 style="color: #ffd700; margin-top:0;">👑 Admin Control Panel</h3>
 
         <div class="input-group">
-            <label style="color:#eee;">Select Member Name:</label>
+            <label>Select Member Name:</label>
             <select id="adminTargetUser" onchange="updateAdminAvailableMonths()" style="color:#333; background:#fff;"></select>
         </div>
 
         <div class="input-group">
-            <label style="color:#eee;">Select Target Month:</label>
+            <label>Select Target Month:</label>
             <select id="adminTargetMonth" style="color:#333; background:#fff;">
             </select>
         </div>
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
 
-        <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
+        <h4 style="color: #ffd700; border-top: 1px dashed var(--card-border); padding-top:15px; margin-bottom: 10px;">📊 Annual Collection Ledger</h4>
         <div style="overflow-x: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <table id="adminLedgerTable" style="width: 100%; font-size: 11px; min-width: 750px; text-align: center; border-collapse: collapse;">
                 <thead>
@@ -230,8 +271,8 @@
             </table>
         </div>
 
-        <h4 style="color: #ffd700; border-top: 1px dashed rgba(255,255,255,0.2); padding-top:15px; margin-bottom: 10px;">📸 Pending Verification Pipeline</h4>
-        <div id="screenshotApprovalsContainer" style="font-size: 13px; color: #eee; max-height:300px; overflow-y:auto;">
+        <h4 style="color: #ffd700; border-top: 1px dashed var(--card-border); padding-top:15px; margin-bottom: 10px;">📸 Pending Verification Pipeline</h4>
+        <div id="screenshotApprovalsContainer" style="font-size: 13px; max-height:300px; overflow-y:auto;">
             <p style="color:#bbb; font-style:italic;">No active verification items in stream pipeline.</p>
         </div>
     </div>
@@ -247,14 +288,14 @@
         <div id="statusBox" class="status-box due">
             <div style="font-size: 16px; font-weight: bold; margin: 0; line-height: 1.5; text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center;">
                 <div><span id="statusSignal" class="signal red"></span><span id="statusText">Loading Status...</span></div>
-                <div id="statusSubText" style="font-size: 13px; font-weight: 500; color: #ddd;"></div>
+                <div id="statusSubText" style="font-size: 13px; font-weight: 500;"></div>
             </div>
             <button id="payNowBtn" class="btn-square" onclick="showPaymentForm()">Pay Now</button>
         </div>
 
         <div class="balance-box">
             <span>Total Fund Balance</span>
-            <h3 id="totalBalanceView">₹2200</h3>
+            <h3 id="totalBalanceView">₹2800</h3>
         </div>
 
         <!-- 💳 PAYMENT FORM SECTION -->
@@ -278,8 +319,8 @@
             <!-- 🎯 LAUNCH UPI APP -->
             <button onclick="openUpiAppDirectly()" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App</button>
             
-            <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
-            <div class="input-group" style="margin-top:15px;"><label style="color:#eee; font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
+            <div class="input-group" style="margin-top:15px;"><label>Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
+            <div class="input-group" style="margin-top:15px;"><label style="font-weight:bold;">Attach Screenshot (Optional):</label><input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;"></div>
             
             <button class="btn-action" style="margin-top: 15px; background: #2ec4b6; box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);" onclick="submitTransaction()">Confirm Payment</button>
             <button class="btn-action" style="margin-top: 10px; background: rgba(255, 77, 77, 0.8); border: 1px solid #ff4d4d; box-shadow: none;" onclick="hidePaymentForm()">✖ Cancel / Back</button>
@@ -288,7 +329,7 @@
 
     <div class="container">
         <h3 style="color:#ffd700; margin-bottom: 5px;">📈 Current Month Status</h3>
-        <p id="monthTrackerTitle" style="margin: 0 0 15px 0; color: #ddd; font-size: 14px; font-weight: bold;"></p>
+        <p id="monthTrackerTitle" style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold;"></p>
         <div class="summary-list-title" id="paidCountText">Paid (0)</div><div class="member-badge-list" id="paidBadgeList"></div>
         <div class="summary-list-title" id="pendingCountText">Pending (0)</div><div class="member-badge-list" id="pendingBadgeList"></div>
     </div>
@@ -297,7 +338,7 @@
         <h3 style="color:#ffd700;">📊 Fund Statement</h3>
         
         <div class="input-group">
-            <label style="color:#eee">Select Month / Filter:</label>
+            <label>Select Month / Filter:</label>
             <select id="monthFilter" onchange="filterByMonth()" style="color:#333; background:#fff; font-weight:bold;">
             </select>
         </div>
@@ -338,7 +379,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v19'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v20'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -361,6 +402,37 @@
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
 
+    // 🌓 DARK/LIGHT MODE TOGGLE FUNCTION
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeToggleBtn');
+        body.classList.toggle('light-mode');
+        
+        if (body.classList.contains('light-mode')) {
+            btn.innerText = "🌙 Dark Mode";
+            localStorage.setItem("cj_theme", "light");
+        } else {
+            btn.innerText = "☀️ Light Mode";
+            localStorage.setItem("cj_theme", "dark");
+        }
+    }
+
+    // 🔔 WEB PUSH NOTIFICATION FUNCTION
+    function sendPushNotification(title, message) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: message,
+                icon: "https://cdn-icons-png.flaticon.com/512/2489/2489756.png"
+            });
+        }
+    }
+
+    function requestNotificationPermission() {
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+    }
+
     function copyUpiId() {
         navigator.clipboard.writeText("9895076221@sbi").then(() => {
             alert("UPI ID (9895076221@sbi) copied to clipboard!");
@@ -370,21 +442,6 @@
     function openUpiAppDirectly() {
         copyUpiId();
         window.location.href = "upi://pay";
-    }
-
-    function requestAdminNotificationPermission() {
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
-    }
-
-    function triggerAdminNotification(username, amount) {
-        if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("💰 CJ Fund: New Payment Request!", {
-                body: `${username} has submitted a payment of ₹${amount}. Tap to review!`,
-                icon: "https://cdn-icons-png.flaticon.com/512/2489/2489756.png"
-            });
-        }
     }
 
     function logUserActivity(user) {
@@ -398,6 +455,15 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         setupStatementFilters();
+        
+        // Restore Saved Theme
+        if (localStorage.getItem("cj_theme") === "light") {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeToggleBtn').innerText = "🌙 Dark Mode";
+        }
+
+        requestNotificationPermission();
+
         const sessionUsername = localStorage.getItem("cj_active_user");
         if(sessionUsername) { 
             currentLoggedInUser = sessionUsername; 
@@ -456,7 +522,6 @@
             document.getElementById('adminControlPanelCard').style.display = 'block';
             document.getElementById('adminTargetUser').innerHTML = allMembersList.map(m=>`<option value="${m}">${m}</option>`).join('');
             
-            requestAdminNotificationPermission();
             listenForPendingApprovals();
             loadAdminAnnualLedger();
             updateAdminAvailableMonths();
@@ -478,8 +543,7 @@
             orderedTimelineMonths.forEach(mId => {
                 if (mId === "July2026") return; 
 
-                let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
-                let docData = trackerMap[mId] || trackerMap[spacedMonthId] || { paid: [] };
+                let docData = trackerMap[mId] || { paid: [] };
 
                 if (!docData.paid || !docData.paid.includes(selectedUser)) {
                     let displayMonth = mId.replace("2026", " 2026").replace("2027", " 2027");
@@ -508,7 +572,7 @@
 
             if(initialApprovalCount !== null && snapshot.docs.length > initialApprovalCount) {
                 const latestDoc = snapshot.docs[snapshot.docs.length - 1].data();
-                triggerAdminNotification(latestDoc.username, latestDoc.amount);
+                sendPushNotification("💰 CJ Fund: Payment Request!", `${latestDoc.username} submitted ₹${latestDoc.amount}. Tap to review!`);
             }
             initialApprovalCount = snapshot.docs.length;
 
@@ -528,7 +592,6 @@
         });
     }
 
-    // 🎯 EXACT AUTO-UPDATE LOGIC UPON APPROVAL
     function processApproval(id, isApprove) {
         if(!isApprove) { 
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
@@ -553,8 +616,7 @@
                     let mId = orderedTimelineMonths[i];
                     if(mId === "July2026") continue; 
 
-                    let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
-                    let mData = trackerMap[mId] || trackerMap[spacedMonthId] || { paid: [], pending: allMembersList };
+                    let mData = trackerMap[mId] || { paid: [], pending: allMembersList };
                     
                     if(!mData.paid || !mData.paid.includes(app.username)) {
                         targetedMonthsToUpdate.push(mId);
@@ -596,7 +658,8 @@
                 });
 
                 db.collection("approvals").doc(id).delete().then(() => {
-                    alert(`Approved successfully for ${app.username} (${monthsToCreditCount} Months Credit)!`);
+                    sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${totalPaidAmount} has been recorded.`);
+                    alert(`Approved successfully for ${app.username}!`);
                     loadAdminAnnualLedger();
                     updateAdminAvailableMonths();
                 });
@@ -653,7 +716,7 @@
 
     function fetchLiveDatabaseContent(user) {
         db.collection("metadata").doc("fundSummary").onSnapshot(doc => {
-            document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 2200}`;
+            document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 2800}`;
         });
 
         db.collection("transactions").orderBy("date", "desc").onSnapshot(snap => {
