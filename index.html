@@ -294,7 +294,7 @@
             <h3 id="totalBalanceView">₹400</h3>
         </div>
 
-        <!-- 💳 CLEAN PAYMENT SECTION: MANUAL UPI COPY + LAUNCH APP -->
+        <!-- 💳 PAYMENT FORM SECTION -->
         <div id="paymentForm" class="payment-section">
             
             <div class="input-group">
@@ -312,7 +312,7 @@
                 <button onclick="copyUpiId()" style="background:#ffd700; color:#333; border:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">📋 Copy ID</button>
             </div>
 
-            <!-- 🎯 MANUAL UPI LAUNCH BUTTON (WITHOUT CONFLICTING Deep Link Parameters) -->
+            <!-- 🎯 LAUNCH UPI APP -->
             <button onclick="openUpiAppDirectly()" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App</button>
             
             <div class="input-group" style="margin-top:15px;"><label style="color:#eee">Paste UPI Transaction ID / UTR:</label><input type="text" id="txnId" style="color:#333; background:#fff;"></div>
@@ -375,7 +375,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v13'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v16'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -405,7 +405,6 @@
     }
 
     function openUpiAppDirectly() {
-        // Automatically copies UPI ID before launching UPI app
         copyUpiId();
         window.location.href = "upi://pay";
     }
@@ -539,6 +538,7 @@
         });
     }
 
+    // 🎯 ENHANCED PROCESS APPROVAL WITH DUAL MONTH MATCHING & ACCURATE TRACKER CLEANUP
     function processApproval(id, isApprove) {
         if(!isApprove) { 
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
@@ -563,7 +563,9 @@
                     let mId = orderedTimelineMonths[i];
                     if(mId === "July2026") continue; 
 
-                    let mData = trackerMap[mId] || { paid: [], pending: allMembersList };
+                    let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
+                    let mData = trackerMap[mId] || trackerMap[spacedMonthId] || { paid: [], pending: allMembersList };
+                    
                     if(!mData.paid || !mData.paid.includes(app.username)) {
                         targetedMonthsToUpdate.push(mId);
                         if(targetedMonthsToUpdate.length === monthsToCreditCount) break;
@@ -579,21 +581,29 @@
 
                 let batch = db.batch();
                 targetedMonthsToUpdate.forEach(mId => {
-                    let ref = db.collection("trackers").doc(mId);
-                    batch.set(ref, {
-                        paid: firebase.firestore.FieldValue.arrayUnion(app.username),
-                        pending: firebase.firestore.FieldValue.arrayRemove(app.username)
-                    }, { merge: true });
+                    let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
+                    
+                    let targetDocId = trackerMap[spacedMonthId] ? spacedMonthId : mId;
+                    let ref = db.collection("trackers").doc(targetDocId);
+                    
+                    let currentPaid = trackerMap[targetDocId]?.paid || [];
+                    let currentPending = trackerMap[targetDocId]?.pending || [...allMembersList];
+
+                    if(!currentPaid.includes(app.username)) { currentPaid.push(app.username); }
+                    let updatedPending = currentPending.filter(name => name !== app.username);
+
+                    batch.set(ref, { paid: currentPaid, pending: updatedPending }, { merge: true });
                 });
 
                 db.collection("dues").doc(app.username).set({ months: [] });
                 db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(totalPaidAmount) });
                 
                 let monthLabels = targetedMonthsToUpdate.map(m => m.replace("2026", " 2026").replace("2027", " 2027")).join(', ');
+                
                 db.collection("transactions").add({ 
                     date: new Date().toISOString().split('T')[0], 
                     name: app.username, 
-                    desc: `Proof Verified (For ${monthLabels})`, 
+                    desc: `Paid by app (For ${monthLabels})`, 
                     type: "Credit", 
                     status: "Paid", 
                     amount: totalPaidAmount 
@@ -607,6 +617,7 @@
         });
     }
 
+    // 🎯 PREVENT DUPLICATE AMOUNT ADDITION & CLEAN UP PENDING LIST
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -614,27 +625,46 @@
         if(!u) { alert("Select a member!"); return; }
         if(!m) { alert("Select a month!"); return; }
 
-        db.collection("dues").doc(u).set({ months: [] });
-        
-        db.collection("trackers").doc(m).set({
-            paid: firebase.firestore.FieldValue.arrayUnion(u),
-            pending: firebase.firestore.FieldValue.arrayRemove(u)
-        }, { merge: true });
+        let spacedMonthId = m.replace("2026", " 2026").replace("2027", " 2027");
 
-        db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(MONTHLY_SUBSCRIPTION_AMOUNT) });
-        
-        let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
-        db.collection("transactions").add({ 
-            date: new Date().toISOString().split('T')[0], 
-            name: u, 
-            desc: `Paid to Admin directly (For ${displayMonth})`, 
-            type: "Credit", 
-            status: "Paid", 
-            amount: MONTHLY_SUBSCRIPTION_AMOUNT 
+        db.collection("trackers").get().then((snapshot) => {
+            let trackerMap = {};
+            snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
+
+            let targetDocId = trackerMap[spacedMonthId] ? spacedMonthId : m;
+            let docData = trackerMap[targetDocId] || { paid: [], pending: [...allMembersList] };
+
+            if (docData.paid && docData.paid.includes(u)) {
+                alert(`${u} is already marked as PAID for ${spacedMonthId}! Duplicate payment avoided.`);
+                return;
+            }
+
+            let updatedPaid = docData.paid || [];
+            if(!updatedPaid.includes(u)) { updatedPaid.push(u); }
+            
+            let currentPending = docData.pending || [...allMembersList];
+            let updatedPending = currentPending.filter(name => name !== u);
+
+            db.collection("trackers").doc(targetDocId).set({
+                paid: updatedPaid,
+                pending: updatedPending
+            }, { merge: true }).then(() => {
+                db.collection("dues").doc(u).set({ months: [] });
+                db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(MONTHLY_SUBSCRIPTION_AMOUNT) });
+                
+                db.collection("transactions").add({ 
+                    date: new Date().toISOString().split('T')[0], 
+                    name: u, 
+                    desc: `Paid directly (For ${spacedMonthId})`, 
+                    type: "Credit", 
+                    status: "Paid", 
+                    amount: MONTHLY_SUBSCRIPTION_AMOUNT 
+                });
+
+                alert(`Cleared ${spacedMonthId} successfully for ${u}!`);
+                loadAdminAnnualLedger();
+            });
         });
-
-        alert(`Cleared ${displayMonth} successfully for ${u}!`);
-        loadAdminAnnualLedger();
     }
 
     function fetchLiveDatabaseContent(user) {
@@ -655,16 +685,18 @@
         });
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
-        db.collection("trackers").doc(currentMonthId).onSnapshot(doc => {
-            let paidList = [];
-            let pendingList = [...allMembersList];
+        const currentMonthIdNoSpace = currentMonthId.replace(" ", "");
 
-            if (doc.exists) {
-                const data = doc.data();
-                paidList = data.paid || [];
-                pendingList = (data.pending && data.pending.length > 0) ? data.pending : allMembersList;
-            } else if (currentMonthId === "July2026") {
-                db.collection("trackers").doc("July2026").set({ paid: allMembersList, pending: [] });
+        db.collection("trackers").onSnapshot(snapshot => {
+            let trackerMap = {};
+            snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
+
+            let data = trackerMap[currentMonthId] || trackerMap[currentMonthIdNoSpace] || { paid: [], pending: [...allMembersList] };
+            
+            let paidList = data.paid || [];
+            let pendingList = allMembersList.filter(m => !paidList.includes(m));
+
+            if (currentMonthIdNoSpace === "July2026") {
                 paidList = allMembersList;
                 pendingList = [];
             }
@@ -935,7 +967,8 @@
                 let txnIndex = 0;
 
                 orderedTimelineMonths.forEach(monthId => {
-                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
+                    let spacedMonthId = monthId.replace("2026", " 2026").replace("2027", " 2027");
+                    let monthInfo = trackerData[monthId] || trackerData[spacedMonthId] || { paid: [], pending: [] };
                     
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
                         if (monthId === "July2026") {
@@ -1042,7 +1075,8 @@
                 let txnIndex = 0;
 
                 displayMonths.forEach(monthId => {
-                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
+                    let spacedMonthId = monthId.replace("2026", " 2026").replace("2027", " 2027");
+                    let monthInfo = trackerData[monthId] || trackerData[spacedMonthId] || { paid: [], pending: [] };
                     
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
                         if (monthId === "July2026") {
