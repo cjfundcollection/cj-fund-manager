@@ -300,7 +300,8 @@
             <button class="btn-refresh" onclick="location.reload()">🔄 Refresh</button>
             <h2 id="userWelcome">Name</h2>
             <p id="userPhone">📞 +91 00000 00000</p>
-            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px; display:inline-block;">ADMIN ACCESS</span>
+            <!-- 🔧 FIXED: Removed display:inline-block to prevent badge leaking to normal users -->
+            <span id="adminBadge" style="display:none; background:#ffd700; color:#333; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; margin-top:5px;">ADMIN ACCESS</span>
         </div>
 
         <div id="statusBox" class="status-box due">
@@ -316,7 +317,7 @@
             <h3 id="totalBalanceView">₹2800</h3>
         </div>
 
-        <!-- 💳 PAYMENT FORM SECTION (SIMPLIFIED - NO TRANSACTION ID) -->
+        <!-- 💳 PAYMENT FORM SECTION -->
         <div id="paymentForm" class="payment-section">
             
             <!-- 1. YOUR DUE DISPLAY -->
@@ -416,7 +417,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v26'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v27'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -597,6 +598,7 @@
         
         logUserActivity(user);
 
+        // 🔒 STRICT ADMIN CHECK FOR JAISAL ONLY
         if(user === SYSTEM_ADMIN_USER) {
             document.getElementById('adminBadge').style.display = 'inline-block';
             document.getElementById('adminControlPanelCard').style.display = 'block';
@@ -605,7 +607,11 @@
             listenForPendingApprovals();
             loadAdminAnnualLedger();
             updateAdminAvailableMonths();
+        } else {
+            document.getElementById('adminBadge').style.display = 'none';
+            document.getElementById('adminControlPanelCard').style.display = 'none';
         }
+        
         fetchLiveDatabaseContent(user);
     }
 
