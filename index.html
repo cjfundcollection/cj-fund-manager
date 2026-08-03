@@ -207,14 +207,12 @@
 
         <div class="input-group">
             <label style="color:#eee;">Select Member Name:</label>
-            <!-- Added onchange listener to update target months dynamically -->
             <select id="adminTargetUser" onchange="updateAdminAvailableMonths()" style="color:#333; background:#fff;"></select>
         </div>
 
         <div class="input-group">
             <label style="color:#eee;">Select Target Month:</label>
             <select id="adminTargetMonth" style="color:#333; background:#fff;">
-                <!-- Populated dynamically via updateAdminAvailableMonths() -->
             </select>
         </div>
 
@@ -340,7 +338,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v18'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v19'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -406,8 +404,6 @@
             loginToDashboard(sessionUsername); 
 
             if (sessionUsername === "Jaisal") {
-                db.collection("metadata").doc("fundSummary").set({ totalBalance: 2200 }, { merge: true });
-
                 db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
                     snapshot.forEach((doc) => { doc.ref.delete(); });
                 });
@@ -463,12 +459,11 @@
             requestAdminNotificationPermission();
             listenForPendingApprovals();
             loadAdminAnnualLedger();
-            updateAdminAvailableMonths(); // Initialize dynamic month dropdown
+            updateAdminAvailableMonths();
         }
         fetchLiveDatabaseContent(user);
     }
 
-    // 🎯 DYNAMIC MONTH FILTER: Shows ONLY Unpaid & Future months for the selected member
     function updateAdminAvailableMonths() {
         const selectedUser = document.getElementById('adminTargetUser').value;
         const monthDropdown = document.getElementById('adminTargetMonth');
@@ -481,12 +476,11 @@
             let availableOptionsHTML = "";
 
             orderedTimelineMonths.forEach(mId => {
-                if (mId === "July2026") return; // July is fixed/closed
+                if (mId === "July2026") return; 
 
                 let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
                 let docData = trackerMap[mId] || trackerMap[spacedMonthId] || { paid: [] };
 
-                // Only add if the user HAS NOT paid for this month yet
                 if (!docData.paid || !docData.paid.includes(selectedUser)) {
                     let displayMonth = mId.replace("2026", " 2026").replace("2027", " 2027");
                     availableOptionsHTML += `<option value="${mId}">${displayMonth}</option>`;
@@ -534,6 +528,7 @@
         });
     }
 
+    // 🎯 EXACT AUTO-UPDATE LOGIC UPON APPROVAL
     function processApproval(id, isApprove) {
         if(!isApprove) { 
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
@@ -576,12 +571,9 @@
 
                 let batch = db.batch();
                 targetedMonthsToUpdate.forEach(mId => {
-                    let spacedMonthId = mId.replace("2026", " 2026").replace("2027", " 2027");
-                    let targetDocId = trackerMap[spacedMonthId] ? spacedMonthId : mId;
-                    let ref = db.collection("trackers").doc(targetDocId);
-                    
-                    let currentPaid = trackerMap[targetDocId]?.paid || [];
-                    let currentPending = trackerMap[targetDocId]?.pending || [...allMembersList];
+                    let ref = db.collection("trackers").doc(mId);
+                    let currentPaid = trackerMap[mId]?.paid || [];
+                    let currentPending = trackerMap[mId]?.pending || [...allMembersList];
 
                     if(!currentPaid.includes(app.username)) { currentPaid.push(app.username); }
                     let updatedPending = currentPending.filter(name => name !== app.username);
@@ -606,7 +598,7 @@
                 db.collection("approvals").doc(id).delete().then(() => {
                     alert(`Approved successfully for ${app.username} (${monthsToCreditCount} Months Credit)!`);
                     loadAdminAnnualLedger();
-                    updateAdminAvailableMonths(); // Refresh dropdown list after approval
+                    updateAdminAvailableMonths();
                 });
             });
         });
@@ -619,17 +611,14 @@
         if(!u) { alert("Select a member!"); return; }
         if(!m) { alert("No valid unpaid month selected!"); return; }
 
-        let spacedMonthId = m.replace("2026", " 2026").replace("2027", " 2027");
+        let targetDocId = m;
+        let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
 
-        db.collection("trackers").get().then((snapshot) => {
-            let trackerMap = {};
-            snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
-
-            let targetDocId = trackerMap[spacedMonthId] ? spacedMonthId : m;
-            let docData = trackerMap[targetDocId] || { paid: [], pending: [...allMembersList] };
+        db.collection("trackers").doc(targetDocId).get().then((doc) => {
+            let docData = doc.exists ? doc.data() : { paid: [], pending: [...allMembersList] };
 
             if (docData.paid && docData.paid.includes(u)) {
-                alert(`${u} is already marked as PAID for ${spacedMonthId}!`);
+                alert(`${u} is already marked as PAID for ${displayMonth}!`);
                 return;
             }
 
@@ -649,15 +638,15 @@
                 db.collection("transactions").add({ 
                     date: new Date().toISOString().split('T')[0], 
                     name: u, 
-                    desc: `Paid directly (For ${spacedMonthId})`, 
+                    desc: `Paid directly (For ${displayMonth})`, 
                     type: "Credit", 
                     status: "Paid", 
                     amount: MONTHLY_SUBSCRIPTION_AMOUNT 
                 });
 
-                alert(`Cleared ${spacedMonthId} successfully for ${u}!`);
+                alert(`Cleared ${displayMonth} successfully for ${u}!`);
                 loadAdminAnnualLedger();
-                updateAdminAvailableMonths(); // Refresh dropdown list after payment
+                updateAdminAvailableMonths();
             });
         });
     }
@@ -683,18 +672,17 @@
         });
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
-        const currentMonthIdNoSpace = currentMonthId.replace(" ", "");
 
         db.collection("trackers").onSnapshot(snapshot => {
             let trackerMap = {};
             snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
 
-            let data = trackerMap[currentMonthId] || trackerMap[currentMonthIdNoSpace] || { paid: [], pending: [...allMembersList] };
+            let data = trackerMap[currentMonthId] || { paid: [], pending: [...allMembersList] };
             
             let paidList = data.paid || [];
             let pendingList = allMembersList.filter(m => !paidList.includes(m));
 
-            if (currentMonthIdNoSpace === "July2026") {
+            if (currentMonthId === "July2026") {
                 paidList = allMembersList;
                 pendingList = [];
             }
@@ -968,8 +956,7 @@
                 let txnIndex = 0;
 
                 orderedTimelineMonths.forEach(monthId => {
-                    let spacedMonthId = monthId.replace("2026", " 2026").replace("2027", " 2027");
-                    let monthInfo = trackerData[monthId] || trackerData[spacedMonthId] || { paid: [], pending: [] };
+                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
                     
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
                         if (monthId === "July2026") {
@@ -1076,8 +1063,7 @@
                 let txnIndex = 0;
 
                 displayMonths.forEach(monthId => {
-                    let spacedMonthId = monthId.replace("2026", " 2026").replace("2027", " 2027");
-                    let monthInfo = trackerData[monthId] || trackerData[spacedMonthId] || { paid: [], pending: [] };
+                    let monthInfo = trackerData[monthId] || { paid: [], pending: [] };
                     
                     if (monthInfo.paid && monthInfo.paid.includes(member)) {
                         if (monthId === "July2026") {
