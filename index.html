@@ -233,7 +233,7 @@
 <!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
     <h2>Security Update</h2>
-    <p>You are logged in with the default password. Set a new personal password before accessing the dashboard.</p>
+    <p>You are logged in with default or reset credentials. Set your personal password before accessing the dashboard.</p>
     <div class="input-group"><label for="newPassword">New Password</label><input type="password" id="newPassword"></div>
     <div class="input-group"><label for="confirmPassword">Confirm New Password</label><input type="password" id="confirmPassword"></div>
     <button class="btn-primary" style="background: #2ecc71; box-shadow: none;" onclick="updatePassword()">Update Password</button>
@@ -379,7 +379,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v20'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v21'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -482,30 +482,68 @@
         }
     });
 
+    // 🔑 UPDATED LOGIN LOGIC (DYNAMIC DEFAULT PASSWORD AND RESET SUPPORT)
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
-        if(!selectedUser || !pass) { alert("Fill all fields!"); return; }
+        
+        if (!selectedUser || !pass) { 
+            alert("Please select your name and enter password!"); 
+            return; 
+        }
+        
         currentLoggedInUser = selectedUser;
 
         db.collection("users").doc(selectedUser).get().then((doc) => {
-            if (doc.exists && pass === doc.data().password) {
-                localStorage.setItem("cj_active_user", selectedUser);
-                loginToDashboard(selectedUser);
-            } else if (!doc.exists && pass === "1234") {
+            // CASE 1: ടൈപ്പ് ചെയ്തത് "1234" ആണെങ്കിൽ നേരെ Force Password Change പേജിലേക്ക് മാറ്റും
+            if (pass === "1234") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('passwordChangePage').style.display = 'block';
-            } else { alert("Wrong Password!"); }
+                return;
+            }
+
+            // CASE 2: ഫയർബേസിൽ അക്കൗണ്ട് നിലവിലുണ്ടെങ്കിൽ
+            if (doc.exists) {
+                const storedPassword = doc.data().password;
+
+                if (pass === storedPassword) {
+                    localStorage.setItem("cj_active_user", selectedUser);
+                    loginToDashboard(selectedUser);
+                } else {
+                    alert("Wrong Password! Please try again.");
+                }
+            } 
+            // CASE 3: ഫയർബേസിൽ നിന്ന് യൂസറെ ഡിലീറ്റ് ചെയ്തതാണെങ്കിൽ
+            else {
+                alert("Account reset detected. Please login using default password '1234' to set your new password!");
+            }
+        }).catch(err => {
+            console.error("Login Error:", err);
+            alert("Login Error: " + err.message);
         });
     }
 
     function updatePassword() {
         const newPass = document.getElementById('newPassword').value.trim();
-        if (newPass === "" || newPass === "1234") { alert("Invalid Password!"); return; }
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+
+        if (newPass === "" || newPass === "1234") { 
+            alert("Please enter a valid password (cannot be default '1234')!"); 
+            return; 
+        }
+
+        if (newPass !== confirmPass) {
+            alert("Passwords do not match!");
+            return;
+        }
+
         db.collection("users").doc(currentLoggedInUser).set({ password: newPass }, { merge: true }).then(() => {
+            alert("Password updated successfully!");
             localStorage.setItem("cj_active_user", currentLoggedInUser);
             document.getElementById('passwordChangePage').style.display = 'none';
             loginToDashboard(currentLoggedInUser);
+        }).catch(err => {
+            alert("Failed to update password: " + err.message);
         });
     }
 
