@@ -310,7 +310,8 @@
     </div>
     <div class="input-group">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter password (Default is 1234)">
+        <!-- 🎯 REMOVED DEFAULT PASSWORD TEXT -->
+        <input type="password" id="password" placeholder="Enter your password">
     </div>
     <button class="btn-primary" onclick="handleLogin()">Login</button>
 </div>
@@ -478,7 +479,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v6'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v7'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -774,7 +775,6 @@
         document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${user}%20Payment`;
     }
 
-    // 🎯 ENHANCED HIGHLIGHTED PAYMENT STATUS PANEL (BIGGER & CLEAR FONT)
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
@@ -806,7 +806,6 @@
             }
         } else {
             box.className = "status-box due"; sig.className = "signal red";
-            // 🌟 BIGGER & BRIGHTER RED TEXT FOR READABILITY
             txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} payment due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
