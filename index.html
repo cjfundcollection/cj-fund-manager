@@ -182,27 +182,27 @@
 
         .status-box {
             background: rgba(255, 255, 255, 0.08);
-            padding: 15px;
-            border-radius: 12px;
+            padding: 18px 15px;
+            border-radius: 14px;
             text-align: center;
             margin-bottom: 15px;
-            border-left: 5px solid #ccc;
+            border-left: 6px solid #ccc;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
         }
-        .status-box.due { border-left-color: #ff4d4d; background: rgba(255, 77, 77, 0.1); }
-        .status-box.paid { border-left-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+        .status-box.due { border-left-color: #ff4d4d; background: rgba(255, 77, 77, 0.15); }
+        .status-box.paid { border-left-color: #2ecc71; background: rgba(46, 204, 113, 0.15); }
         
-        .signal { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
-        .signal.red { background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; }
-        .signal.green { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        .signal { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; }
+        .signal.red { background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
+        .signal.green { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
         
         .btn-square {
-            display: none; padding: 8px 16px; background: #ff4d4d; color: white; text-align: center;
-            border: 2px solid #ff4d4d; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold;
+            display: none; padding: 10px 20px; background: #ff4d4d; color: white; text-align: center;
+            border: 2px solid #ff4d4d; border-radius: 8px; font-size: 15px; cursor: pointer; font-weight: bold;
         }
         .btn-square:hover { background: white; color: #ff4d4d; }
         .btn-square.advance-btn { background: #2ecc71 !important; border-color: #2ecc71 !important; }
@@ -478,7 +478,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v5'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
+        const swBlob = new Blob([`const CACHE_NAME = 'cj-fund-v6'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(clients.claim())); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response("Offline"))));`], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob));
     }
 
@@ -671,7 +671,6 @@
                 let batch = db.batch();
                 targetedMonthsToUpdate.forEach(mId => {
                     let ref = db.collection("trackers").doc(mId);
-                    // 🎯 STRICT: ADD TO PAID AND REMOVE FROM PENDING
                     batch.set(ref, {
                         paid: firebase.firestore.FieldValue.arrayUnion(app.username),
                         pending: firebase.firestore.FieldValue.arrayRemove(app.username)
@@ -775,6 +774,7 @@
         document.getElementById('upiPayLink').href = `upi://pay?pa=9895076221@sbi&pn=CJFund&am=${amt}.00&cu=INR&tn=${user}%20Payment`;
     }
 
+    // 🎯 ENHANCED HIGHLIGHTED PAYMENT STATUS PANEL (BIGGER & CLEAR FONT)
     function updatePaymentStatusPanel(user) {
         const box = document.getElementById('statusBox');
         const sig = document.getElementById('statusSignal');
@@ -792,7 +792,7 @@
 
         if (isPaidThisMonth) {
             box.className = "status-box paid"; sig.className = "signal green";
-            txt.innerHTML = `<span style="color:#2ecc71;">${thisMonth} payment done</span>`;
+            txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} payment done</span>`;
             sub.innerHTML = `✨ Next Month Advance Window Open`; sub.style.display = "block";
             btn.innerText = "Pay Now"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
             
@@ -806,7 +806,8 @@
             }
         } else {
             box.className = "status-box due"; sig.className = "signal red";
-            txt.innerHTML = `${thisMonth} payment due: <span style="color:#ff4d4d; font-size:18px;"><b>₹600</b></span>`;
+            // 🌟 BIGGER & BRIGHTER RED TEXT FOR READABILITY
+            txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} payment due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
             sub.style.display = "none";
             btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
             
@@ -823,9 +824,7 @@
         adjustUPILinkForAmount();
     }
 
-    // 🎯 STRICT DUPICATE FILTER FOR TRACKER UI
     function renderPaidPendingTrackers(paid, rawPending) {
-        // paid ലിസ്റ്റിലുള്ളവരെ pending ലിസ്റ്റിൽ നിന്ന് ഒഴിവാക്കുന്നു
         let filteredPending = rawPending.filter(member => !paid.includes(member));
         
         document.getElementById('paidCountText').innerText = `Paid (${paid.length})`;
