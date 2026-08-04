@@ -356,7 +356,7 @@
             
             <!-- 3. SCREENSHOT OPTION -->
             <div class="input-group" style="margin-top:15px;">
-                <label style="font-weight:bold; color:#ffd700;">Attach Payment Screenshot:</label>
+                <label style="font-weight:bold; color:#ffd700;">Attach Payment Screenshot (Mandatory):</label>
                 <input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;">
             </div>
 
@@ -942,14 +942,24 @@
     }
 
     function submitTransaction() {
-        const file = document.getElementById('screenshotFile').files[0];
+        const fileInput = document.getElementById('screenshotFile');
+        const file = fileInput.files[0];
         const selectedAmt = parseInt(document.getElementById('userPayAmountInput').value);
 
-        if(!selectedAmt || selectedAmt <= 0) { alert("Please enter a valid amount!"); return; }
+        if(!selectedAmt || selectedAmt <= 0) { 
+            alert("Please enter a valid amount!"); 
+            return; 
+        }
+
+        // 🛑 Screenshot ഇല്ലാതെ സബ്‌മിറ്റ് ചെയ്യാൻ അനുവദിക്കില്ല
+        if (!file) {
+            alert("⚠️ Please attach the payment screenshot before submitting!");
+            return;
+        }
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
 
-        const send = (base64 = null) => {
+        const send = (base64) => {
             db.collection("approvals").add({
                 username: currentLoggedInUser,
                 amount: selectedAmt, 
@@ -957,15 +967,17 @@
                 screenshot: base64,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                alert("Proof submitted successfully!");
+                alert("Payment Proof submitted successfully! Waiting for Admin Approval. ✅");
                 hidePaymentForm();
                 document.getElementById('screenshotFile').value = "";
+            }).catch((err) => {
+                alert("Failed to submit proof: " + err.message);
             });
         };
 
-        if(file) {
-            const r = new FileReader(); r.onloadend = () => send(r.result); r.readAsDataURL(file);
-        } else { send(null); }
+        const r = new FileReader(); 
+        r.onloadend = () => send(r.result); 
+        r.readAsDataURL(file);
     }
 
     function renderTable(data) {
