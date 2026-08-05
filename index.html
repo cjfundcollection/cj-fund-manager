@@ -142,10 +142,12 @@
         }
         .status-box.due { border-left-color: #ff4d4d; background: rgba(255, 77, 77, 0.15); }
         .status-box.paid { border-left-color: #2ecc71; background: rgba(46, 204, 113, 0.15); }
+        .status-box.pending-review { border-left-color: #f1c40f; background: rgba(241, 196, 15, 0.15); }
         
         .signal { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; }
         .signal.red { background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; }
         .signal.green { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .signal.yellow { background: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
         
         .btn-square {
             display: none; padding: 10px 20px; background: #ff4d4d; color: white; text-align: center;
@@ -854,6 +856,11 @@
                 updateAdminAvailableMonths();
             }
         });
+
+        // 🔄 Approvals snap-shot dynamic status panel update
+        db.collection("approvals").onSnapshot(() => {
+            updatePaymentStatusPanel(currentLoggedInUser);
+        });
     }
 
     function updatePaymentStatusPanel(user) {
@@ -872,54 +879,75 @@
 
         document.getElementById('monthTrackerTitle').innerText = `${thisMonth} ${dObj.getFullYear()} Tracker`;
 
-        let isPaidThisMonth = currentMonthTrackerData.paid && currentMonthTrackerData.paid.includes(user);
+        // 🔍 Check if current user has an active pending approval request
+        db.collection("approvals").where("username", "==", user).get().then((snapshot) => {
+            let isPendingApproval = !snapshot.empty;
+            let isPaidThisMonth = currentMonthTrackerData.paid && currentMonthTrackerData.paid.includes(user);
 
-        if (isPaidThisMonth) {
-            box.className = "status-box paid"; sig.className = "signal green";
-            txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} Payment Done</span>`;
-            
-            sub.innerHTML = `🎉 All Dues Cleared! Pay Advance for Next Month`; 
-            sub.style.display = "block";
-            
-            btn.innerText = "Pay Advance"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
-            
-            if(dueText) dueText.innerText = "₹0 (Fully Paid)";
-            if(payLabel) payLabel.innerText = "Enter Advance Amount (₹):";
-            if(amtInput) {
-                amtInput.value = 600;
-                amtInput.placeholder = "Enter advance amount (e.g. 600)";
-            }
+            if (isPendingApproval) {
+                // 🟡 PENDING APPROVAL (Strictly "Verification in progress...")
+                box.className = "status-box pending-review"; sig.className = "signal yellow";
+                
+                if (isPaidThisMonth) {
+                    txt.innerHTML = `<span style="color:#f1c40f; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">Advance Payment Under Review</span>`;
+                } else {
+                    txt.innerHTML = `<span style="color:#f1c40f; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} Payment Under Review</span>`;
+                }
 
-            if(instructionBox) {
-                instructionBox.innerHTML = `
-                    📌 <b>Advance Payment Guide:</b><br>
-                    1. You have zero pending dues! Pay advance for upcoming months.<br>
-                    2. Copy UPI ID below & transfer the advance amount.<br>
-                    3. Attach receipt screenshot & click <b>Confirm Payment</b>.
-                `;
-            }
-        } else {
-            box.className = "status-box due"; sig.className = "signal red";
-            txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} Payment Due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
-            sub.style.display = "none";
-            btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
-            
-            if(dueText) dueText.innerText = "₹600";
-            if(payLabel) payLabel.innerText = "Enter Amount to Pay (₹):";
-            if(amtInput) {
-                amtInput.value = 600;
-                amtInput.placeholder = "Enter amount (e.g. 600)";
-            }
+                sub.innerHTML = `⏳ Verification in progress...`; 
+                sub.style.display = "block";
+                btn.style.display = "none"; // Hide button while approval is pending
+            } 
+            else if (isPaidThisMonth) {
+                // 🟢 PAID STATUS
+                box.className = "status-box paid"; sig.className = "signal green";
+                txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} Payment Done</span>`;
+                
+                sub.innerHTML = `🎉 All Dues Cleared! Pay Advance for Next Month`; 
+                sub.style.display = "block";
+                
+                btn.innerText = "Pay Advance"; btn.className = "btn-square advance-btn"; btn.style.display = "inline-block";
+                
+                if(dueText) dueText.innerText = "₹0 (Fully Paid)";
+                if(payLabel) payLabel.innerText = "Enter Advance Amount (₹):";
+                if(amtInput) {
+                    amtInput.value = 600;
+                    amtInput.placeholder = "Enter advance amount (e.g. 600)";
+                }
 
-            if(instructionBox) {
-                instructionBox.innerHTML = `
-                    📌 <b>How to Pay & Get Approval:</b><br>
-                    1. Copy the UPI ID below & pay using Google Pay / PhonePe.<br>
-                    2. Take a screenshot of the successful receipt.<br>
-                    3. Attach the screenshot below & click <b>Confirm Payment</b>.
-                `;
+                if(instructionBox) {
+                    instructionBox.innerHTML = `
+                        📌 <b>Advance Payment Guide:</b><br>
+                        1. You have zero pending dues! Pay advance for upcoming months.<br>
+                        2. Copy UPI ID below & transfer the advance amount.<br>
+                        3. Attach receipt screenshot & click <b>Confirm Payment</b>.
+                    `;
+                }
+            } 
+            else {
+                // 🔴 DUE STATUS
+                box.className = "status-box due"; sig.className = "signal red";
+                txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} Payment Due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
+                sub.style.display = "none";
+                btn.innerText = "Pay Now"; btn.className = "btn-square"; btn.style.display = "inline-block";
+                
+                if(dueText) dueText.innerText = "₹600";
+                if(payLabel) payLabel.innerText = "Enter Amount to Pay (₹):";
+                if(amtInput) {
+                    amtInput.value = 600;
+                    amtInput.placeholder = "Enter amount (e.g. 600)";
+                }
+
+                if(instructionBox) {
+                    instructionBox.innerHTML = `
+                        📌 <b>How to Pay & Get Approval:</b><br>
+                        1. Copy the UPI ID below & pay using Google Pay / PhonePe.<br>
+                        2. Take a screenshot of the successful receipt.<br>
+                        3. Attach the screenshot below & click <b>Confirm Payment</b>.
+                    `;
+                }
             }
-        }
+        });
     }
 
     function renderPaidPendingTrackers(paid, rawPending) {
@@ -951,7 +979,7 @@
             return; 
         }
 
-        // 🛑 Screenshot ഇല്ലാതെ സബ്‌മിറ്റ് ചെയ്യാൻ അനുവദിക്കില്ല
+        // 🛑 Mandatory Screenshot check
         if (!file) {
             alert("⚠️ Please attach the payment screenshot before submitting!");
             return;
@@ -967,9 +995,11 @@
                 screenshot: base64,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                alert("Payment Proof submitted successfully! Waiting for Admin Approval. ✅");
+                // ⚡ Clean Alert Message without "Admin" reference
+                alert("Payment Proof submitted successfully! Verification in progress. ✅");
                 hidePaymentForm();
                 document.getElementById('screenshotFile').value = "";
+                updatePaymentStatusPanel(currentLoggedInUser);
             }).catch((err) => {
                 alert("Failed to submit proof: " + err.message);
             });
