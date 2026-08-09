@@ -268,14 +268,14 @@
         <h3 style="color: #ffd700; margin-top:0;">👑 Admin Control Panel</h3>
 
         <div class="input-group">
-            <label>Select Member Name:</label>
-            <select id="adminTargetUser" onchange="updateAdminAvailableMonths()" style="color:#333; background:#fff;"></select>
+            <label>Select Target Month:</label>
+            <select id="adminTargetMonth" onchange="updateAdminPendingUsersForMonth()" style="color:#333; background:#fff;">
+            </select>
         </div>
 
         <div class="input-group">
-            <label>Select Target Month:</label>
-            <select id="adminTargetMonth" style="color:#333; background:#fff;">
-            </select>
+            <label>Select Unpaid Member:</label>
+            <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
@@ -322,13 +322,11 @@
         <!-- 💳 PAYMENT FORM SECTION -->
         <div id="paymentForm" class="payment-section">
             
-            <!-- 1. YOUR DUE DISPLAY -->
             <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 10px; border-radius: 10px; margin-bottom: 12px;">
                 <span style="font-size: 12px; color: #ddd; text-transform: uppercase;">Your Due Amount:</span>
                 <h3 id="paymentDueAmountText" style="margin: 3px 0 0 0; color: #ffd700; font-size: 24px;">₹600</h3>
             </div>
 
-            <!-- 💡 INSTRUCTION BANNER -->
             <div style="background: rgba(255, 215, 0, 0.12); border: 1px dashed #ffd700; padding: 12px; border-radius: 12px; margin-bottom: 15px; text-align: left;">
                 <p id="paymentFormInstructionText" style="margin: 0; font-size: 13px; color: #ffd700; font-weight: bold; line-height: 1.5;">
                     📌 <b>How to Pay & Get Approval:</b><br>
@@ -338,13 +336,11 @@
                 </p>
             </div>
 
-            <!-- 2. MANUAL AMOUNT INPUT -->
             <div class="input-group">
                 <label id="payAmountLabel" style="color:#ffd700; font-size:13px; font-weight:bold;">Enter Amount to Pay (₹):</label>
                 <input type="number" id="userPayAmountInput" placeholder="Enter amount (e.g. 600)" style="color:#333; background:#fff; font-weight:bold; font-size:16px;">
             </div>
 
-            <!-- 📌 DIRECT UPI ID & COPY BUTTON -->
             <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius:10px; margin-top: 15px; margin-bottom: 12px; border: 1px solid rgba(255,215,0,0.3); display: flex; align-items: center; justify-content: space-between;">
                 <div style="text-align: left;">
                     <span style="display:block; font-size:11px; color:#aaa;">Official UPI ID:</span>
@@ -353,10 +349,8 @@
                 <button onclick="copyUpiId()" style="background:#ffd700; color:#333; border:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">📋 Copy ID</button>
             </div>
 
-            <!-- 🎯 LAUNCH UPI APP -->
             <button onclick="openUpiAppDirectly()" class="btn-action" style="background: #00b4d8; margin-top:0; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2);">Launch UPI App</button>
             
-            <!-- 3. SCREENSHOT OPTION -->
             <div class="input-group" style="margin-top:15px;">
                 <label style="font-weight:bold; color:#ffd700;">Attach Payment Screenshot (Mandatory):</label>
                 <input type="file" id="screenshotFile" accept="image/*" style="background:#fff; color:#333; padding:5px;">
@@ -418,7 +412,6 @@
 </div>
 
 <script>
-    // 🧹 Clean PWA Worker registration
     if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
@@ -522,11 +515,6 @@
                 db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
                     snapshot.forEach((doc) => { doc.ref.delete(); });
                 });
-                db.collection("transactions").where("name", "==", "July Balance").get().then((snapshot) => {
-                    if(snapshot.empty) {
-                        db.collection("transactions").add({ date: '2026-07-31', name: 'July Balance', type: 'Credit', desc: 'Closing Balance', status: 'Paid', amount: 400 });
-                    }
-                });
             }
         }
     });
@@ -600,15 +588,13 @@
         
         logUserActivity(user);
 
-        // 🔒 STRICT ADMIN CHECK FOR JAISAL ONLY
         if(user === SYSTEM_ADMIN_USER) {
             document.getElementById('adminBadge').style.display = 'inline-block';
             document.getElementById('adminControlPanelCard').style.display = 'block';
-            document.getElementById('adminTargetUser').innerHTML = allMembersList.map(m=>`<option value="${m}">${m}</option>`).join('');
             
+            populateAdminMonthDropdown();
             listenForPendingApprovals();
             loadAdminAnnualLedger();
-            updateAdminAvailableMonths();
         } else {
             document.getElementById('adminBadge').style.display = 'none';
             document.getElementById('adminControlPanelCard').style.display = 'none';
@@ -617,32 +603,32 @@
         fetchLiveDatabaseContent(user);
     }
 
-    function updateAdminAvailableMonths() {
-        const selectedUser = document.getElementById('adminTargetUser').value;
+    function populateAdminMonthDropdown() {
         const monthDropdown = document.getElementById('adminTargetMonth');
-        if(!selectedUser || !monthDropdown) return;
+        if(!monthDropdown) return;
 
-        db.collection("trackers").get().then((snapshot) => {
-            let trackerMap = {};
-            snapshot.forEach(doc => { trackerMap[doc.id] = doc.data(); });
+        let optionsHTML = orderedTimelineMonths.filter(m => m !== "July2026").map(mId => {
+            let disp = mId.replace("2026", " 2026").replace("2027", " 2027");
+            return `<option value="${mId}">${disp}</option>`;
+        }).join('');
 
-            let availableOptionsHTML = "";
+        monthDropdown.innerHTML = optionsHTML;
+        updateAdminPendingUsersForMonth();
+    }
 
-            orderedTimelineMonths.forEach(mId => {
-                if (mId === "July2026") return; 
+    function updateAdminPendingUsersForMonth() {
+        const selectedMonth = document.getElementById('adminTargetMonth').value;
+        const userDropdown = document.getElementById('adminTargetUser');
+        if(!selectedMonth || !userDropdown) return;
 
-                let docData = trackerMap[mId] || { paid: [] };
+        db.collection("trackers").doc(selectedMonth).get().then((doc) => {
+            let paidUsers = doc.exists ? (doc.data().paid || []) : [];
+            let pendingUsers = allMembersList.filter(u => !paidUsers.includes(u));
 
-                if (!docData.paid || !docData.paid.includes(selectedUser)) {
-                    let displayMonth = mId.replace("2026", " 2026").replace("2027", " 2027");
-                    availableOptionsHTML += `<option value="${mId}">${displayMonth}</option>`;
-                }
-            });
-
-            if (availableOptionsHTML === "") {
-                monthDropdown.innerHTML = `<option value="">All Months Fully Paid! 🎉</option>`;
+            if (pendingUsers.length === 0) {
+                userDropdown.innerHTML = `<option value="">🎉 Everyone Paid for ${selectedMonth.replace("2026", " 2026")}!</option>`;
             } else {
-                monthDropdown.innerHTML = availableOptionsHTML;
+                userDropdown.innerHTML = pendingUsers.map(u => `<option value="${u}">${u}</option>`).join('');
             }
         });
     }
@@ -667,16 +653,24 @@
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 let imgTag = data.screenshot ? `<img src="${data.screenshot}" style="max-width:140px; border-radius:8px; margin-top:8px; cursor:pointer; border:1px solid #ffd700;" onclick="window.open('${data.screenshot}')"/>` : `<span style="color:#aaa; font-style:italic;">No Screenshot Attached</span>`;
-                
-                let targetMonthDisplay = data.targetMonth ? data.targetMonth.replace("2026", " 2026").replace("2027", " 2027") : "Auto Month";
+
+                let monthSelectOptions = orderedTimelineMonths.filter(m => m !== "July2026").map(mId => {
+                    let disp = mId.replace("2026", " 2026").replace("2027", " 2027");
+                    return `<option value="${mId}">${disp}</option>`;
+                }).join('');
 
                 container.innerHTML += `
                 <div class="approval-card">
                     <div class="approval-details">
                         <div>👤 <b>Member:</b> <span>${data.username}</span></div>
                         <div>💰 <b>Amount:</b> <span style="color:#2ecc71;">₹${data.amount}</span></div>
-                        <div>📅 <b>Target Month:</b> <span>${targetMonthDisplay}</span></div>
-                        <div>🖼️ <b>Proof Screenshot:</b></div>
+                        <div style="margin-top:6px;">
+                            <label style="font-size:11px; color:#ffd700; display:block;">Select Target Month to Credit:</label>
+                            <select id="monthSelect_${doc.id}" style="width:100%; padding:5px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
+                                ${monthSelectOptions}
+                            </select>
+                        </div>
+                        <div style="margin-top:8px;">🖼️ <b>Proof Screenshot:</b></div>
                         <div>${imgTag}</div>
                     </div>
                     <div class="approval-buttons">
@@ -694,71 +688,47 @@
             return; 
         }
         
+        const selectedTargetMonth = document.getElementById(`monthSelect_${id}`).value;
+        if(!selectedTargetMonth) { alert("Please select a target month!"); return; }
+
         db.collection("approvals").doc(id).get().then(doc => {
             if(!doc.exists) return;
             const app = doc.data();
             const totalPaidAmount = app.amount;
-            
-            let monthsToCreditCount = Math.floor(totalPaidAmount / MONTHLY_SUBSCRIPTION_AMOUNT);
-            if(monthsToCreditCount <= 0) monthsToCreditCount = 1;
+            let displayMonth = selectedTargetMonth.replace("2026", " 2026").replace("2027", " 2027");
 
-            db.collection("trackers").get().then((snapshot) => {
-                let trackerMap = {};
-                snapshot.forEach(d => { trackerMap[d.id] = d.data(); });
+            db.collection("trackers").doc(selectedTargetMonth).get().then((monthDoc) => {
+                let docData = monthDoc.exists ? monthDoc.data() : { paid: [], pending: [...allMembersList] };
 
-                let targetedMonthsToUpdate = [];
+                let updatedPaid = docData.paid || [];
+                if(!updatedPaid.includes(app.username)) { updatedPaid.push(app.username); }
                 
-                for(let i = 0; i < orderedTimelineMonths.length; i++) {
-                    let mId = orderedTimelineMonths[i];
-                    if(mId === "July2026") continue; 
+                let currentPending = docData.pending || [...allMembersList];
+                let updatedPending = currentPending.filter(name => name !== app.username);
 
-                    let mData = trackerMap[mId] || { paid: [], pending: allMembersList };
-                    
-                    if(!mData.paid || !mData.paid.includes(app.username)) {
-                        targetedMonthsToUpdate.push(mId);
-                        if(targetedMonthsToUpdate.length === monthsToCreditCount) break;
-                    }
-                }
+                db.collection("trackers").doc(selectedTargetMonth).set({
+                    paid: updatedPaid,
+                    pending: updatedPending
+                }, { merge: true }).then(() => {
+                    db.collection("dues").doc(app.username).set({ months: [] });
+                    db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(totalPaidAmount) });
 
-                if(targetedMonthsToUpdate.length < monthsToCreditCount) {
-                    let currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
-                    if(!targetedMonthsToUpdate.includes(currentMonthId)) {
-                        targetedMonthsToUpdate.push(currentMonthId);
-                    }
-                }
+                    db.collection("transactions").add({ 
+                        date: new Date().toISOString().split('T')[0], 
+                        name: app.username, 
+                        desc: `Paid by app (For ${displayMonth})`, 
+                        type: "Credit", 
+                        status: "Paid", 
+                        amount: totalPaidAmount 
+                    });
 
-                let batch = db.batch();
-                targetedMonthsToUpdate.forEach(mId => {
-                    let ref = db.collection("trackers").doc(mId);
-                    let currentPaid = trackerMap[mId]?.paid || [];
-                    let currentPending = trackerMap[mId]?.pending || [...allMembersList];
-
-                    if(!currentPaid.includes(app.username)) { currentPaid.push(app.username); }
-                    let updatedPending = currentPending.filter(name => name !== app.username);
-
-                    batch.set(ref, { paid: currentPaid, pending: updatedPending }, { merge: true });
-                });
-
-                db.collection("dues").doc(app.username).set({ months: [] });
-                db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(totalPaidAmount) });
-                
-                let monthLabels = targetedMonthsToUpdate.map(m => m.replace("2026", " 2026").replace("2027", " 2027")).join(', ');
-                
-                db.collection("transactions").add({ 
-                    date: new Date().toISOString().split('T')[0], 
-                    name: app.username, 
-                    desc: `Paid by app (For ${monthLabels})`, 
-                    type: "Credit", 
-                    status: "Paid", 
-                    amount: totalPaidAmount 
-                });
-
-                db.collection("approvals").doc(id).delete().then(() => {
-                    sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${totalPaidAmount} has been recorded.`);
-                    alert(`Approved successfully for ${app.username}!`);
-                    
-                    loadAdminAnnualLedger();
-                    updateAdminAvailableMonths();
+                    db.collection("approvals").doc(id).delete().then(() => {
+                        sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${totalPaidAmount} has been recorded.`);
+                        alert(`Approved successfully for ${app.username} (${displayMonth})!`);
+                        
+                        loadAdminAnnualLedger();
+                        updateAdminPendingUsersForMonth();
+                    });
                 });
             });
         });
@@ -768,8 +738,8 @@
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
         
-        if(!u) { alert("Select a member!"); return; }
-        if(!m) { alert("No valid unpaid month selected!"); return; }
+        if(!m) { alert("Select a month first!"); return; }
+        if(!u) { alert("Select a member or everyone is already paid!"); return; }
 
         let targetDocId = m;
         let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
@@ -806,7 +776,7 @@
 
                 alert(`Cleared ${displayMonth} successfully for ${u}!`);
                 loadAdminAnnualLedger();
-                updateAdminAvailableMonths();
+                updateAdminPendingUsersForMonth();
             });
         });
     }
@@ -816,14 +786,15 @@
             document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 2800}`;
         });
 
+        // 🛑 STRICT NO DUMMY JULY BALANCE ADDING!
         db.collection("transactions").orderBy("date", "desc").onSnapshot(snap => {
-            liveTransactionsList = []; snap.forEach(doc => liveTransactionsList.push(doc.data()));
-            if(liveTransactionsList.length === 0) liveTransactionsList = [{ date: '2026-07-31', name: 'July Balance', type: 'Credit', desc: 'Closing Balance', status: 'Paid', amount: 400 }];
+            liveTransactionsList = []; 
+            snap.forEach(doc => liveTransactionsList.push(doc.data()));
             
             filterByMonth();
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { 
                 loadAdminAnnualLedger();
-                updateAdminAvailableMonths();
+                updateAdminPendingUsersForMonth();
             }
         });
 
@@ -853,11 +824,10 @@
 
             if(currentLoggedInUser === SYSTEM_ADMIN_USER) { 
                 loadAdminAnnualLedger();
-                updateAdminAvailableMonths();
+                updateAdminPendingUsersForMonth();
             }
         });
 
-        // 🔄 Approvals snap-shot dynamic status panel update
         db.collection("approvals").onSnapshot(() => {
             updatePaymentStatusPanel(currentLoggedInUser);
         });
@@ -879,13 +849,11 @@
 
         document.getElementById('monthTrackerTitle').innerText = `${thisMonth} ${dObj.getFullYear()} Tracker`;
 
-        // 🔍 Check if current user has an active pending approval request
         db.collection("approvals").where("username", "==", user).get().then((snapshot) => {
             let isPendingApproval = !snapshot.empty;
             let isPaidThisMonth = currentMonthTrackerData.paid && currentMonthTrackerData.paid.includes(user);
 
             if (isPendingApproval) {
-                // 🟡 PENDING APPROVAL (Strictly "Verification in progress...")
                 box.className = "status-box pending-review"; sig.className = "signal yellow";
                 
                 if (isPaidThisMonth) {
@@ -896,10 +864,9 @@
 
                 sub.innerHTML = `⏳ Verification in progress...`; 
                 sub.style.display = "block";
-                btn.style.display = "none"; // Hide button while approval is pending
+                btn.style.display = "none";
             } 
             else if (isPaidThisMonth) {
-                // 🟢 PAID STATUS
                 box.className = "status-box paid"; sig.className = "signal green";
                 txt.innerHTML = `<span style="color:#2ecc71; font-size:20px; font-weight:800; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${thisMonth} Payment Done</span>`;
                 
@@ -925,7 +892,6 @@
                 }
             } 
             else {
-                // 🔴 DUE STATUS
                 box.className = "status-box due"; sig.className = "signal red";
                 txt.innerHTML = `<span style="color:#ff6b6b; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 1px 5px rgba(0,0,0,0.6);">${thisMonth} Payment Due: <span style="color:#ff4d4d; font-size:23px; text-decoration: underline;">₹600</span></span>`;
                 sub.style.display = "none";
@@ -979,7 +945,6 @@
             return; 
         }
 
-        // 🛑 Mandatory Screenshot check
         if (!file) {
             alert("⚠️ Please attach the payment screenshot before submitting!");
             return;
@@ -995,7 +960,6 @@
                 screenshot: base64,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                // ⚡ Clean Alert Message without "Admin" reference
                 alert("Payment Proof submitted successfully! Verification in progress. ✅");
                 hidePaymentForm();
                 document.getElementById('screenshotFile').value = "";
