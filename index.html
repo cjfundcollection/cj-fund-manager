@@ -429,6 +429,7 @@
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
     const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
     let initialApprovalCount = null;
+    let isProcessingApproval = false; // 🔒 Double click guard
 
     const orderedTimelineMonths = [
         "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
@@ -663,10 +664,16 @@
                 <div class="approval-card">
                     <div class="approval-details">
                         <div>👤 <b>Member:</b> <span>${data.username}</span></div>
-                        <div>💰 <b>Amount:</b> <span style="color:#2ecc71;">₹${data.amount}</span></div>
+                        
+                        <!-- ✏️ EDITABLE AMOUNT OPTION FOR ADMIN -->
+                        <div style="margin-top:6px;">
+                            <label style="font-size:11px; color:#ffd700; display:block;"><b>💰 Claimed Amount (Verify & Edit if needed):</b></label>
+                            <input type="number" id="amtInput_${doc.id}" value="${data.amount}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px; border:1px solid #ccc; box-sizing:border-box;">
+                        </div>
+
                         <div style="margin-top:6px;">
                             <label style="font-size:11px; color:#ffd700; display:block;">Select Target Month to Credit:</label>
-                            <select id="monthSelect_${doc.id}" style="width:100%; padding:5px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
+                            <select id="monthSelect_${doc.id}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
                                 ${monthSelectOptions}
                             </select>
                         </div>
@@ -682,19 +689,36 @@
         });
     }
 
+    // 🔒 SAFE SINGLE-TRIGGER APPROVAL WITH EDITABLE AMOUNT
     function processApproval(id, isApprove) {
+        if (isProcessingApproval) return;
+
         if(!isApprove) { 
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
             return; 
         }
         
-        const selectedTargetMonth = document.getElementById(`monthSelect_${id}`).value;
+        const monthSelectElem = document.getElementById(`monthSelect_${id}`);
+        const selectedTargetMonth = monthSelectElem ? monthSelectElem.value : "";
         if(!selectedTargetMonth) { alert("Please select a target month!"); return; }
 
+        // ✏️ Fetch edited or verified amount by admin
+        const amtInputElem = document.getElementById(`amtInput_${id}`);
+        let verifiedAmount = amtInputElem ? parseInt(amtInputElem.value) : 600;
+
+        if (!verifiedAmount || verifiedAmount <= 0) {
+            alert("Please enter a valid verified amount!");
+            return;
+        }
+
+        isProcessingApproval = true;
+
         db.collection("approvals").doc(id).get().then(doc => {
-            if(!doc.exists) return;
+            if(!doc.exists) {
+                isProcessingApproval = false;
+                return;
+            }
             const app = doc.data();
-            const totalPaidAmount = app.amount;
             let displayMonth = selectedTargetMonth.replace("2026", " 2026").replace("2027", " 2027");
 
             db.collection("trackers").doc(selectedTargetMonth).get().then((monthDoc) => {
@@ -706,31 +730,41 @@
                 let currentPending = docData.pending || [...allMembersList];
                 let updatedPending = currentPending.filter(name => name !== app.username);
 
+                // 1. Update Trackers
                 db.collection("trackers").doc(selectedTargetMonth).set({
                     paid: updatedPaid,
                     pending: updatedPending
                 }, { merge: true }).then(() => {
-                    db.collection("dues").doc(app.username).set({ months: [] });
-                    db.collection("metadata").doc("fundSummary").update({ totalBalance: firebase.firestore.FieldValue.increment(totalPaidAmount) });
+                    
+                    // 2. Update Verified Amount to Total Balance
+                    db.collection("metadata").doc("fundSummary").update({ 
+                        totalBalance: firebase.firestore.FieldValue.increment(verifiedAmount) 
+                    });
 
+                    // 3. Add Single Transaction Record
                     db.collection("transactions").add({ 
                         date: new Date().toISOString().split('T')[0], 
                         name: app.username, 
                         desc: `Paid by app (For ${displayMonth})`, 
                         type: "Credit", 
                         status: "Paid", 
-                        amount: totalPaidAmount 
+                        amount: verifiedAmount 
                     });
 
+                    // 4. Delete Approval Request
                     db.collection("approvals").doc(id).delete().then(() => {
-                        sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${totalPaidAmount} has been recorded.`);
-                        alert(`Approved successfully for ${app.username} (${displayMonth})!`);
+                        isProcessingApproval = false;
+                        sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${verifiedAmount} has been recorded.`);
+                        alert(`Approved successfully for ${app.username} (₹${verifiedAmount} for ${displayMonth})!`);
                         
                         loadAdminAnnualLedger();
                         updateAdminPendingUsersForMonth();
                     });
                 });
             });
+        }).catch(err => {
+            isProcessingApproval = false;
+            alert("Error approving: " + err.message);
         });
     }
 
@@ -786,7 +820,6 @@
             document.getElementById('totalBalanceView').innerText = `₹${doc.exists ? doc.data().totalBalance : 2800}`;
         });
 
-        // 🛑 STRICT NO DUMMY JULY BALANCE ADDING!
         db.collection("transactions").orderBy("date", "desc").onSnapshot(snap => {
             liveTransactionsList = []; 
             snap.forEach(doc => liveTransactionsList.push(doc.data()));
