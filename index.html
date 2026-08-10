@@ -253,7 +253,7 @@
 
 <!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
-    <h2>Security Update</h2>
+    2 Security Update
     <p>You are logged in with default or reset credentials. Set your personal password before accessing the dashboard.</p>
     <div class="input-group"><label for="newPassword">New Password</label><input type="password" id="newPassword"></div>
     <div class="input-group"><label for="confirmPassword">Confirm New Password</label><input type="password" id="confirmPassword"></div>
@@ -276,6 +276,24 @@
         <div class="input-group">
             <label>Select Unpaid Member:</label>
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
+        </div>
+
+        <!-- 📝 UPDATED ENTRY DESCRIPTION WITH CUSTOM NOTE OPTION -->
+        <div class="input-group">
+            <label>Select Entry Description:</label>
+            <select id="adminDescType" onchange="toggleCustomDescInput()" style="color:#333; background:#fff;">
+                <option value="Paid directly">Paid directly (For Selected Month)</option>
+                <option value="Paid by app">Paid by app (For Selected Month)</option>
+                <option value="Adv payment Paid">Adv payment Paid (For Selected Month)</option>
+                <option value="Adv Pay by app">Adv Pay by app (For Selected Month)</option>
+                <option value="CUSTOM">✍️ Custom Note (Type Manually)</option>
+            </select>
+        </div>
+
+        <!-- ✍️ CUSTOM TEXT INPUT (HIDDEN BY DEFAULT) -->
+        <div class="input-group" id="customDescGroup" style="display:none;">
+            <label style="color:#ffd700;">Enter Custom Description Note:</label>
+            <input type="text" id="adminCustomDescInput" placeholder="e.g. Paid via GPay / Cash given" style="color:#333; background:#fff; font-weight:bold;">
         </div>
 
         <button class="btn-action" style="background: #2ecc71; margin-top: 10px;" onclick="adminClearUserDue()">Mark as Paid (Clear Due)</button>
@@ -429,7 +447,7 @@
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
     const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
     let initialApprovalCount = null;
-    let isProcessingApproval = false; // 🔒 Double click guard
+    let isProcessingApproval = false;
 
     const orderedTimelineMonths = [
         "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
@@ -634,13 +652,24 @@
         });
     }
 
+    // ✍️ TOGGLE CUSTOM DESCRIPTION TEXT BOX
+    function toggleCustomDescInput() {
+        const descVal = document.getElementById('adminDescType').value;
+        const customGroup = document.getElementById('customDescGroup');
+        if (descVal === 'CUSTOM') {
+            customGroup.style.display = 'block';
+        } else {
+            customGroup.style.display = 'none';
+        }
+    }
+
     function listenForPendingApprovals() {
         db.collection("approvals").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
             const container = document.getElementById("screenshotApprovalsContainer");
             if(!container) return; container.innerHTML = "";
             
             if(snapshot.empty) { 
-                container.innerHTML = `<p style="color:#bbb; font-style:italic;">No pending verification items.</p>`; 
+                container.innerHTML = `<p style="color:#bbb; font-style:italic;">No active verification items.</p>`; 
                 initialApprovalCount = 0;
                 return; 
             }
@@ -665,18 +694,26 @@
                     <div class="approval-details">
                         <div>👤 <b>Member:</b> <span>${data.username}</span></div>
                         
-                        <!-- ✏️ EDITABLE AMOUNT OPTION FOR ADMIN -->
                         <div style="margin-top:6px;">
-                            <label style="font-size:11px; color:#ffd700; display:block;"><b>💰 Claimed Amount (Verify & Edit if needed):</b></label>
+                            <label style="font-size:11px; color:#ffd700; display:block;"><b>💰 Claimed Amount (Verify & Edit):</b></label>
                             <input type="number" id="amtInput_${doc.id}" value="${data.amount}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px; border:1px solid #ccc; box-sizing:border-box;">
                         </div>
 
                         <div style="margin-top:6px;">
-                            <label style="font-size:11px; color:#ffd700; display:block;">Select Target Month to Credit:</label>
-                            <select id="monthSelect_${doc.id}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
+                            <label style="font-size:11px; color:#ffd700; display:block;">Target Month 1 (Primary):</label>
+                            <select id="monthSelect1_${doc.id}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
                                 ${monthSelectOptions}
                             </select>
                         </div>
+
+                        <div style="margin-top:6px;">
+                            <label style="font-size:11px; color:#aaa; display:block;">Target Month 2 (Optional - If paying 1200+):</label>
+                            <select id="monthSelect2_${doc.id}" style="width:100%; padding:6px; border-radius:5px; font-weight:bold; color:#333; background:#fff; margin-top:3px;">
+                                <option value="">-- None (Single Month Payment) --</option>
+                                ${monthSelectOptions}
+                            </select>
+                        </div>
+
                         <div style="margin-top:8px;">🖼️ <b>Proof Screenshot:</b></div>
                         <div>${imgTag}</div>
                     </div>
@@ -689,7 +726,6 @@
         });
     }
 
-    // 🔒 SAFE SINGLE-TRIGGER APPROVAL WITH EDITABLE AMOUNT
     function processApproval(id, isApprove) {
         if (isProcessingApproval) return;
 
@@ -697,12 +733,12 @@
             if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
             return; 
         }
-        
-        const monthSelectElem = document.getElementById(`monthSelect_${id}`);
-        const selectedTargetMonth = monthSelectElem ? monthSelectElem.value : "";
-        if(!selectedTargetMonth) { alert("Please select a target month!"); return; }
 
-        // ✏️ Fetch edited or verified amount by admin
+        const m1 = document.getElementById(`monthSelect1_${id}`) ? document.getElementById(`monthSelect1_${id}`).value : "";
+        const m2 = document.getElementById(`monthSelect2_${id}`) ? document.getElementById(`monthSelect2_${id}`).value : "";
+        
+        if(!m1) { alert("Please select Target Month 1!"); return; }
+
         const amtInputElem = document.getElementById(`amtInput_${id}`);
         let verifiedAmount = amtInputElem ? parseInt(amtInputElem.value) : 600;
 
@@ -714,48 +750,52 @@
         isProcessingApproval = true;
 
         db.collection("approvals").doc(id).get().then(doc => {
-            if(!doc.exists) {
-                isProcessingApproval = false;
-                return;
-            }
+            if(!doc.exists) { isProcessingApproval = false; return; }
             const app = doc.data();
-            let displayMonth = selectedTargetMonth.replace("2026", " 2026").replace("2027", " 2027");
 
-            db.collection("trackers").doc(selectedTargetMonth).get().then((monthDoc) => {
-                let docData = monthDoc.exists ? monthDoc.data() : { paid: [], pending: [...allMembersList] };
+            let monthsToUpdate = [m1];
+            if(m2 && m2 !== "" && m2 !== m1) { monthsToUpdate.push(m2); }
 
-                let updatedPaid = docData.paid || [];
-                if(!updatedPaid.includes(app.username)) { updatedPaid.push(app.username); }
-                
-                let currentPending = docData.pending || [...allMembersList];
-                let updatedPending = currentPending.filter(name => name !== app.username);
+            let batch = db.batch();
 
-                // 1. Update Trackers
-                db.collection("trackers").doc(selectedTargetMonth).set({
-                    paid: updatedPaid,
-                    pending: updatedPending
-                }, { merge: true }).then(() => {
+            Promise.all(monthsToUpdate.map(mId => db.collection("trackers").doc(mId).get())).then(snapshots => {
+                snapshots.forEach((monthDoc, index) => {
+                    let mId = monthsToUpdate[index];
+                    let docData = monthDoc.exists ? monthDoc.data() : { paid: [], pending: [...allMembersList] };
+
+                    let updatedPaid = docData.paid || [];
+                    if(!updatedPaid.includes(app.username)) { updatedPaid.push(app.username); }
                     
-                    // 2. Update Verified Amount to Total Balance
+                    let currentPending = docData.pending || [...allMembersList];
+                    let updatedPending = currentPending.filter(name => name !== app.username);
+
+                    batch.set(db.collection("trackers").doc(mId), {
+                        paid: updatedPaid,
+                        pending: updatedPending
+                    }, { merge: true });
+                });
+
+                batch.commit().then(() => {
+                    db.collection("dues").doc(app.username).set({ months: [] });
                     db.collection("metadata").doc("fundSummary").update({ 
                         totalBalance: firebase.firestore.FieldValue.increment(verifiedAmount) 
                     });
 
-                    // 3. Add Single Transaction Record
+                    let monthLabels = monthsToUpdate.map(m => m.replace("2026", " 2026").replace("2027", " 2027")).join(' & ');
+
                     db.collection("transactions").add({ 
                         date: new Date().toISOString().split('T')[0], 
                         name: app.username, 
-                        desc: `Paid by app (For ${displayMonth})`, 
+                        desc: `Paid by app (For ${monthLabels})`, 
                         type: "Credit", 
                         status: "Paid", 
                         amount: verifiedAmount 
                     });
 
-                    // 4. Delete Approval Request
                     db.collection("approvals").doc(id).delete().then(() => {
                         isProcessingApproval = false;
                         sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${verifiedAmount} has been recorded.`);
-                        alert(`Approved successfully for ${app.username} (₹${verifiedAmount} for ${displayMonth})!`);
+                        alert(`Approved successfully for ${app.username} (₹${verifiedAmount} for ${monthLabels})!`);
                         
                         loadAdminAnnualLedger();
                         updateAdminPendingUsersForMonth();
@@ -768,15 +808,29 @@
         });
     }
 
+    // 📝 MANUAL CLEAR DUE WITH DYNAMIC CUSTOM DESCRIPTION NOTE
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
+        const descSelectVal = document.getElementById('adminDescType').value;
         
         if(!m) { alert("Select a month first!"); return; }
         if(!u) { alert("Select a member or everyone is already paid!"); return; }
 
         let targetDocId = m;
         let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
+        let finalDescription = "";
+
+        if (descSelectVal === 'CUSTOM') {
+            const customVal = document.getElementById('adminCustomDescInput').value.trim();
+            if (!customVal) {
+                alert("Please type a custom description note!");
+                return;
+            }
+            finalDescription = customVal;
+        } else {
+            finalDescription = `${descSelectVal} (For ${displayMonth})`;
+        }
 
         db.collection("trackers").doc(targetDocId).get().then((doc) => {
             let docData = doc.exists ? doc.data() : { paid: [], pending: [...allMembersList] };
@@ -802,13 +856,14 @@
                 db.collection("transactions").add({ 
                     date: new Date().toISOString().split('T')[0], 
                     name: u, 
-                    desc: `Paid directly (For ${displayMonth})`, 
+                    desc: finalDescription, 
                     type: "Credit", 
                     status: "Paid", 
                     amount: MONTHLY_SUBSCRIPTION_AMOUNT 
                 });
 
                 alert(`Cleared ${displayMonth} successfully for ${u}!`);
+                document.getElementById('adminCustomDescInput').value = "";
                 loadAdminAnnualLedger();
                 updateAdminPendingUsersForMonth();
             });
