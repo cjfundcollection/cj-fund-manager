@@ -434,7 +434,6 @@
     const SYSTEM_ADMIN_USER = "Jaisal";
     let currentLoggedInUser = "";
     let liveTransactionsList = [];
-    let activeUserDues = [];
     let currentMonthTrackerData = { paid: [], pending: ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"] };
     const allMembersList = ["Haris", "Hasain", "Ismail", "Jaisal", "Luqman", "Saloob", "Sameer", "Shamsu"];
     const MONTHLY_SUBSCRIPTION_AMOUNT = 600;
@@ -521,12 +520,6 @@
         if(sessionUsername) { 
             currentLoggedInUser = sessionUsername; 
             loginToDashboard(sessionUsername); 
-
-            if (sessionUsername === "Jaisal") {
-                db.collection("transactions").where("name", "==", "Jaisal").where("amount", "==", 500).get().then((snapshot) => {
-                    snapshot.forEach((doc) => { doc.ref.delete(); });
-                });
-            }
         }
     });
 
@@ -553,23 +546,25 @@
         }
 
         db.collection("users").doc(selectedUser).get().then((doc) => {
-            if (pass === "1234") {
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('passwordChangePage').style.display = 'block';
-                return;
+            const hasExistingPassword = doc.exists && doc.data().password && String(doc.data().password).trim() !== "";
+
+            if (!hasExistingPassword) {
+                if (pass === "1234") {
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('passwordChangePage').style.display = 'block';
+                    return;
+                } else {
+                    alert("Account is reset. Please enter default password '1234' to set your new password.");
+                    return;
+                }
             }
 
-            if (doc.exists) {
-                const storedPassword = String(doc.data().password || "").trim();
-                if (pass === storedPassword) {
-                    localStorage.setItem("cj_active_user", selectedUser);
-                    loginToDashboard(selectedUser);
-                } else {
-                    alert("Wrong Password! Please try again.");
-                }
-            } 
-            else {
-                alert("Account reset detected. Please login using default password '1234' to set your new password!");
+            const storedPassword = String(doc.data().password || "").trim();
+            if (pass === storedPassword) {
+                localStorage.setItem("cj_active_user", selectedUser);
+                loginToDashboard(selectedUser);
+            } else {
+                alert("Wrong Password! Please try again.");
             }
         }).catch(err => {
             console.error("Login Error:", err);
@@ -889,10 +884,6 @@
                 loadAdminAnnualLedger();
                 updateAdminPendingUsersForMonth();
             }
-        });
-
-        db.collection("dues").doc(user).onSnapshot(doc => {
-            activeUserDues = doc.exists ? (doc.data().months || []) : [];
         });
 
         const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
