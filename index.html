@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CJ fund</title>
     
-    <!-- PWA MOBILE META TAGS -->
     <meta name="theme-color" content="#3b1563">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -231,7 +230,6 @@
     <button id="openPdfBtn">📄 Open File</button>
 </div>
 
-<!-- 1. Login Screen -->
 <div class="login-container" id="loginPage">
     <h1>CJ fund</h1>
     <p>Friends Emergency Fund App</p>
@@ -251,7 +249,6 @@
     <a class="forgot-pass-link" onclick="triggerForgotPasswordWhatsApp()">Forgot Password?</a>
 </div>
 
-<!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
     <h2>Security Update</h2>
     <p>You are logged in with default or reset credentials. Set your personal password before accessing the dashboard.</p>
@@ -260,10 +257,8 @@
     <button class="btn-primary" style="background: #2ecc71; box-shadow: none;" onclick="updatePassword()">Update Password</button>
 </div>
 
-<!-- 3. Main Dashboard Screen -->
 <div class="app-content" id="appContent">
     
-    <!-- 👑 DYNAMIC MANUAL ADMIN PANEL -->
     <div class="container" id="adminControlPanelCard" style="display:none; border: 2px solid #ffd700; background: rgba(255,215,0,0.05);">
         <h3 style="color: #ffd700; margin-top:0;">👑 Admin Control Panel</h3>
 
@@ -278,7 +273,6 @@
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
 
-        <!-- 📝 ENTRY DESCRIPTION WITH CUSTOM NOTE OPTION -->
         <div class="input-group">
             <label>Select Entry Description:</label>
             <select id="adminDescType" onchange="toggleCustomDescInput()" style="color:#333; background:#fff;">
@@ -290,7 +284,6 @@
             </select>
         </div>
 
-        <!-- ✍️ CUSTOM TEXT INPUT (HIDDEN BY DEFAULT) -->
         <div class="input-group" id="customDescGroup" style="display:none;">
             <label style="color:#ffd700;">Enter Custom Description Note:</label>
             <input type="text" id="adminCustomDescInput" placeholder="e.g. Paid via GPay / Cash given" style="color:#333; background:#fff; font-weight:bold;">
@@ -337,7 +330,6 @@
             <h3 id="totalBalanceView">₹2800</h3>
         </div>
 
-        <!-- 💳 PAYMENT FORM SECTION -->
         <div id="paymentForm" class="payment-section">
             
             <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 10px; border-radius: 10px; margin-bottom: 12px;">
@@ -454,7 +446,6 @@
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
 
-    // 🔒 ADMIN SHA-256 HASHING FUNCTION
     async function hashAdminPassword(pass) {
         const secretSalt = "@CJ_ADMIN_SECURE_2026";
         const encoder = new TextEncoder();
@@ -548,7 +539,6 @@
         }
     });
 
-    // 👑 UPDATED LOGIN SYSTEM WITH ADMIN HASH SECURITY
     async function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -571,12 +561,10 @@
                 const storedPassword = doc.data().password;
                 let isMatch = false;
 
-                // 👑 അഡ്മിൻ ആണെങ്കിൽ SHA-256 Hash പരിശോധന
                 if (selectedUser === SYSTEM_ADMIN_USER) {
                     const hashedInput = await hashAdminPassword(pass);
                     isMatch = (hashedInput === storedPassword);
                 } else {
-                    // 👤 മറ്റ് മെമ്പർമാർക്ക് സാധാരണ പാസ്‌വേഡ് പരിശോധന
                     isMatch = (pass === storedPassword);
                 }
 
@@ -596,7 +584,7 @@
         });
     }
 
-    function updatePassword() {
+    async function updatePassword() {
         const newPass = document.getElementById('newPassword').value.trim();
         const confirmPass = document.getElementById('confirmPassword').value.trim();
 
@@ -610,14 +598,25 @@
             return;
         }
 
-        db.collection("users").doc(currentLoggedInUser).set({ password: newPass }, { merge: true }).then(() => {
+        try {
+            let passwordToSave = newPass;
+
+            if (currentLoggedInUser === SYSTEM_ADMIN_USER) {
+                passwordToSave = await hashAdminPassword(newPass);
+            }
+
+            await db.collection("users").doc(currentLoggedInUser).set({ 
+                password: passwordToSave 
+            }, { merge: true });
+
             alert("Password updated successfully!");
             localStorage.setItem("cj_active_user", currentLoggedInUser);
             document.getElementById('passwordChangePage').style.display = 'none';
             loginToDashboard(currentLoggedInUser);
-        }).catch(err => {
+
+        } catch (err) {
             alert("Failed to update password: " + err.message);
-        });
+        }
     }
 
     function loginToDashboard(user) {
