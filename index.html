@@ -213,8 +213,11 @@
         @keyframes slideUp { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 
+    <!-- Firebase SDKs (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -239,8 +242,14 @@
         <label for="username">Choose Your Name</label>
         <select id="username">
             <option value="">Select Your Name</option>
-            <option value="Haris">Haris</option><option value="Hasain">Hasain</option><option value="Ismail">Ismail</option><option value="Jaisal">Jaisal</option>
-            <option value="Luqman">Luqman</option><option value="Saloob">Saloob</option><option value="Sameer">Sameer</option><option value="Shamsu">Shamsu</option>
+            <option value="Haris">Haris</option>
+            <option value="Hasain">Hasain</option>
+            <option value="Ismail">Ismail</option>
+            <option value="Jaisal">Jaisal</option>
+            <option value="Luqman">Luqman</option>
+            <option value="Saloob">Saloob</option>
+            <option value="Sameer">Sameer</option>
+            <option value="Shamsu">Shamsu</option>
         </select>
     </div>
     <div class="input-group">
@@ -253,7 +262,7 @@
 
 <!-- 2. Force Password Change Screen -->
 <div class="force-password-container" id="passwordChangePage">
-    2 Security Update
+    <h2>Security Update</h2>
     <p>You are logged in with default or reset credentials. Set your personal password before accessing the dashboard.</p>
     <div class="input-group"><label for="newPassword">New Password</label><input type="password" id="newPassword"></div>
     <div class="input-group"><label for="confirmPassword">Confirm New Password</label><input type="password" id="confirmPassword"></div>
@@ -278,7 +287,7 @@
             <select id="adminTargetUser" style="color:#333; background:#fff;"></select>
         </div>
 
-        <!-- 📝 UPDATED ENTRY DESCRIPTION WITH CUSTOM NOTE OPTION -->
+        <!-- 📝 ENTRY DESCRIPTION WITH CUSTOM NOTE OPTION -->
         <div class="input-group">
             <label>Select Entry Description:</label>
             <select id="adminDescType" onchange="toggleCustomDescInput()" style="color:#333; background:#fff;">
@@ -437,9 +446,12 @@
     const firebaseConfig = { apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ", authDomain: "cj-fund-manager.firebaseapp.com", projectId: "cj-fund-manager", storageBucket: "cj-fund-manager.firebasestorage.app", messagingSenderId: "786565291388", appId: "1:786565291388:web:e06abab3ce51a8d2b198f9" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
     const userPhones = { "Jaisal": "+91 96337 13902", "Hasain": "+91 95629 62147", "Shamsu": "+91 90374 99954", "Sameer": "+91 96330 66667", "Ismail": "+91 95620 66667", "Haris": "+91 98950 76221", "Luqman": "+91 97479 23762", "Saloob": "+91 96057 15674" };
     const SYSTEM_ADMIN_USER = "Jaisal";
+    const ADMIN_EMAIL = "cjfundcollection@gmail.com";
+    
     let currentLoggedInUser = "";
     let liveTransactionsList = [];
     let activeUserDues = [];
@@ -538,6 +550,7 @@
         }
     });
 
+    // 🔒 BACKEND AUTH INTEGRATED LOGIN
     function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -546,7 +559,7 @@
             alert("Please select your name and enter password!"); 
             return; 
         }
-        
+
         currentLoggedInUser = selectedUser;
 
         db.collection("users").doc(selectedUser).get().then((doc) => {
@@ -560,8 +573,33 @@
                 const storedPassword = doc.data().password;
 
                 if (pass === storedPassword) {
-                    localStorage.setItem("cj_active_user", selectedUser);
-                    loginToDashboard(selectedUser);
+                    
+                    // A. ADMIN LOGIN (Jaisal)
+                    if (selectedUser === SYSTEM_ADMIN_USER) {
+                        auth.signInWithEmailAndPassword(ADMIN_EMAIL, pass)
+                            .then(() => {
+                                localStorage.setItem("cj_active_user", selectedUser);
+                                loginToDashboard(selectedUser);
+                            })
+                            .catch((authErr) => {
+                                console.warn("Admin Auth warning:", authErr.message);
+                                localStorage.setItem("cj_active_user", selectedUser);
+                                loginToDashboard(selectedUser);
+                            });
+                    } 
+                    // B. MEMBER LOGIN
+                    else {
+                        auth.signInAnonymously()
+                            .then(() => {
+                                localStorage.setItem("cj_active_user", selectedUser);
+                                loginToDashboard(selectedUser);
+                            })
+                            .catch((authErr) => {
+                                localStorage.setItem("cj_active_user", selectedUser);
+                                loginToDashboard(selectedUser);
+                            });
+                    }
+
                 } else {
                     alert("Wrong Password! Please try again.");
                 }
@@ -593,7 +631,20 @@
             alert("Password updated successfully!");
             localStorage.setItem("cj_active_user", currentLoggedInUser);
             document.getElementById('passwordChangePage').style.display = 'none';
-            loginToDashboard(currentLoggedInUser);
+            
+            if (currentLoggedInUser === SYSTEM_ADMIN_USER) {
+                auth.signInWithEmailAndPassword(ADMIN_EMAIL, newPass).then(() => {
+                    loginToDashboard(currentLoggedInUser);
+                }).catch(() => {
+                    loginToDashboard(currentLoggedInUser);
+                });
+            } else {
+                auth.signInAnonymously().then(() => {
+                    loginToDashboard(currentLoggedInUser);
+                }).catch(() => {
+                    loginToDashboard(currentLoggedInUser);
+                });
+            }
         }).catch(err => {
             alert("Failed to update password: " + err.message);
         });
@@ -652,7 +703,6 @@
         });
     }
 
-    // ✍️ TOGGLE CUSTOM DESCRIPTION TEXT BOX
     function toggleCustomDescInput() {
         const descVal = document.getElementById('adminDescType').value;
         const customGroup = document.getElementById('customDescGroup');
@@ -804,11 +854,10 @@
             });
         }).catch(err => {
             isProcessingApproval = false;
-            alert("Error approving: " + err.message);
+            alert("Approval Notice: " + err.message);
         });
     }
 
-    // 📝 MANUAL CLEAR DUE WITH DYNAMIC CUSTOM DESCRIPTION NOTE
     function adminClearUserDue() {
         const u = document.getElementById('adminTargetUser').value;
         const m = document.getElementById('adminTargetMonth').value; 
@@ -866,6 +915,8 @@
                 document.getElementById('adminCustomDescInput').value = "";
                 loadAdminAnnualLedger();
                 updateAdminPendingUsersForMonth();
+            }).catch((err) => {
+                alert("Clear Due Notice: " + err.message);
             });
         });
     }
@@ -1394,7 +1445,12 @@
         });
     }
 
-    function logout() { localStorage.clear(); location.reload(); }
+    function logout() { 
+        auth.signOut().then(() => {
+            localStorage.clear(); 
+            location.reload(); 
+        });
+    }
 
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
