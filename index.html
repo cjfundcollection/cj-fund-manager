@@ -446,15 +446,6 @@
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
 
-    async function hashAdminPassword(pass) {
-        const secretSalt = "@CJ_ADMIN_SECURE_2026";
-        const encoder = new TextEncoder();
-        const data = encoder.encode(pass + secretSalt);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
     function toggleTheme() {
         const body = document.body;
         const btn = document.getElementById('themeToggleBtn');
@@ -550,7 +541,18 @@
         
         currentLoggedInUser = selectedUser;
 
-        db.collection("users").doc(selectedUser).get().then(async (doc) => {
+        if (selectedUser === SYSTEM_ADMIN_USER) {
+            if (pass === "Cj@9696") {
+                localStorage.setItem("cj_active_user", selectedUser);
+                loginToDashboard(selectedUser);
+                return;
+            } else {
+                alert("Wrong Password! Please try again.");
+                return;
+            }
+        }
+
+        db.collection("users").doc(selectedUser).get().then((doc) => {
             if (pass === "1234") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('passwordChangePage').style.display = 'block';
@@ -559,15 +561,7 @@
 
             if (doc.exists) {
                 const storedPassword = String(doc.data().password || "").trim();
-                let isMatch = false;
-
-                const hashedInput = await hashAdminPassword(pass);
-
-                if (pass === storedPassword || (selectedUser === SYSTEM_ADMIN_USER && hashedInput === storedPassword)) {
-                    isMatch = true;
-                }
-
-                if (isMatch) {
+                if (pass === storedPassword) {
                     localStorage.setItem("cj_active_user", selectedUser);
                     loginToDashboard(selectedUser);
                 } else {
