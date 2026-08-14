@@ -214,6 +214,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -426,7 +427,15 @@
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
 
-    const firebaseConfig = { apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ", authDomain: "cj-fund-manager.firebaseapp.com", projectId: "cj-fund-manager", storageBucket: "cj-fund-manager.firebasestorage.app", messagingSenderId: "786565291388", appId: "1:786565291388:web:e06abab3ce51a8d2b198f9" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyDZfoY6oM19uTEwYy0MYq1CcbdylevLkiQ", 
+        authDomain: "cj-fund-manager.firebaseapp.com", 
+        projectId: "cj-fund-manager", 
+        storageBucket: "cj-fund-manager.firebasestorage.app", 
+        messagingSenderId: "786565291388", 
+        appId: "1:786565291388:web:e06abab3ce51a8d2b198f9" 
+    };
+    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -523,6 +532,7 @@
         }
     });
 
+    // 🔒 SECURE LOGIN LOGIC
     async function handleLogin() {
         const selectedUser = document.getElementById('username').value;
         const pass = document.getElementById('password').value.trim();
@@ -534,17 +544,20 @@
         
         currentLoggedInUser = selectedUser;
 
+        // 🛡️ അഡ്മിൻ ലോഗിൻ (ഗൂഗിൾ Auth സെർവർ വഴി നേരിട്ട് പരിശോധിക്കുന്നു)
         if (selectedUser === SYSTEM_ADMIN_USER) {
-            if (pass === "Cj@9696") {
-                localStorage.setItem("cj_active_user", selectedUser);
-                loginToDashboard(selectedUser);
-                return;
-            } else {
-                alert("Wrong Password! Please try again.");
-                return;
-            }
+            firebase.auth().signInWithEmailAndPassword("cjfundcollection@gmail.com", pass)
+                .then((userCredential) => {
+                    localStorage.setItem("cj_active_user", selectedUser);
+                    loginToDashboard(selectedUser);
+                })
+                .catch((error) => {
+                    alert("Wrong Admin Password!");
+                });
+            return;
         }
 
+        // മറ്റ് മെമ്പർമാരുടെ ലോഗിൻ
         db.collection("users").doc(selectedUser).get().then((doc) => {
             const hasExistingPassword = doc.exists && doc.data().password && String(doc.data().password).trim() !== "";
 
