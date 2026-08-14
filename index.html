@@ -558,14 +558,13 @@
             }
 
             if (doc.exists) {
-                const storedPassword = doc.data().password;
+                const storedPassword = String(doc.data().password || "").trim();
                 let isMatch = false;
 
-                if (selectedUser === SYSTEM_ADMIN_USER) {
-                    const hashedInput = await hashAdminPassword(pass);
-                    isMatch = (hashedInput === storedPassword);
-                } else {
-                    isMatch = (pass === storedPassword);
+                const hashedInput = await hashAdminPassword(pass);
+
+                if (pass === storedPassword || (selectedUser === SYSTEM_ADMIN_USER && hashedInput === storedPassword)) {
+                    isMatch = true;
                 }
 
                 if (isMatch) {
@@ -599,14 +598,8 @@
         }
 
         try {
-            let passwordToSave = newPass;
-
-            if (currentLoggedInUser === SYSTEM_ADMIN_USER) {
-                passwordToSave = await hashAdminPassword(newPass);
-            }
-
             await db.collection("users").doc(currentLoggedInUser).set({ 
-                password: passwordToSave 
+                password: newPass 
             }, { merge: true });
 
             alert("Password updated successfully!");
