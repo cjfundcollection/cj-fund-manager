@@ -79,40 +79,31 @@
         }
 
         .login-container h1 { color: #ffd700; font-size: 36px; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3); letter-spacing: 1px; }
-        .login-container p { color: var(--subtext-color); font-size: 14px; margin-top: 0; margin-bottom: 30px; }
-        .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color); }
+        .login-container p { color: var(--subtext-color); font-size: 14px; margin-top: 0; margin-bottom: 25px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-color); }
         .input-group input, .input-group select {
             width: 100%; padding: 12px 15px; border: 1px solid var(--card-border);
             border-radius: 10px; box-sizing: border-box; background: var(--input-bg);
-            color: #333; font-size: 16px; outline: none;
+            color: #333; font-size: 15px; outline: none;
         }
 
         .btn-primary {
             width: 100%; padding: 14px; background: linear-gradient(90deg, #ff007f, #7f00ff);
-            color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold;
+            color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold;
             cursor: pointer; box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3); transition: 0.3s;
+            margin-top: 10px;
         }
 
         .forgot-pass-link {
             display: inline-block;
-            margin-top: 18px;
+            margin-top: 15px;
             color: #ffd700;
             font-size: 13px;
             text-decoration: underline;
             cursor: pointer;
             font-weight: 500;
         }
-
-        .force-password-container {
-            display: none; width: 100%; max-width: 400px; background: white; padding: 30px;
-            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-top: auto;
-            margin-bottom: auto; box-sizing: border-box;
-        }
-        .force-password-container h2 { color: #ff4d4d; margin-top: 0; text-align: center; }
-        .force-password-container p { color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
-        .force-password-container .input-group label { color: #444; }
-        .force-password-container .input-group input { color: #333; background: #fff; border: 1px solid #ccc; }
 
         .app-content { display: none; width: 100%; max-width: 450px; animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -197,6 +188,33 @@
         .approval-details span { color: #ffd700; font-weight: bold; }
         .approval-buttons { display: flex; gap: 10px; margin-top: 10px; }
 
+        .custom-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        .custom-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .custom-toast.success { background: #27ae60; }
+        .custom-toast.error { background: #e74c3c; }
+        .custom-toast.info { background: #2980b9; }
+
         .download-toast {
             display: none; position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             background: #2ecc71; color: white; padding: 12px 20px; border-radius: 30px;
@@ -220,6 +238,8 @@
 </head>
 <body>
 
+<div id="toastNotification" class="custom-toast"></div>
+
 <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">☀️ Light Mode</button>
 
 <button class="install-banner" id="installBtn" onclick="triggerAppInstallation()">
@@ -231,31 +251,44 @@
     <button id="openPdfBtn">📄 Open File</button>
 </div>
 
+<!-- 🔑 CLEAN ADAPTIVE LOGIN CONTAINER -->
 <div class="login-container" id="loginPage">
     <h1>CJ fund</h1>
     <p>Friends Emergency Fund App</p>
+
     <div class="input-group">
         <label for="username">Choose Your Name</label>
-        <select id="username">
+        <select id="username" onchange="onUserSelectionChange()">
             <option value="">Select Your Name</option>
-            <option value="Haris">Haris</option><option value="Hasain">Hasain</option><option value="Ismail">Ismail</option><option value="Jaisal">Jaisal</option>
-            <option value="Luqman">Luqman</option><option value="Saloob">Saloob</option><option value="Sameer">Sameer</option><option value="Shamsu">Shamsu</option>
+            <option value="Haris">Haris</option>
+            <option value="Hasain">Hasain</option>
+            <option value="Ismail">Ismail</option>
+            <option value="Jaisal">Jaisal</option>
+            <option value="Luqman">Luqman</option>
+            <option value="Saloob">Saloob</option>
+            <option value="Sameer">Sameer</option>
+            <option value="Shamsu">Shamsu</option>
         </select>
     </div>
+
+    <!-- First-time registration fields (hidden once registered) -->
+    <div class="input-group" id="emailGroup" style="display:none;">
+        <label for="userEmail">Enter Your Email ID (One-Time Setup)</label>
+        <input type="email" id="userEmail" placeholder="Enter your personal email address">
+    </div>
+
     <div class="input-group">
-        <label for="password">Password</label>
+        <label for="password">Your CJ Fund Password</label>
         <input type="password" id="password" placeholder="Enter your password">
     </div>
-    <button class="btn-primary" onclick="handleLogin()">Login</button>
-    <a class="forgot-pass-link" onclick="triggerForgotPasswordWhatsApp()">Forgot Password?</a>
-</div>
 
-<div class="force-password-container" id="passwordChangePage">
-    <h2>Security Update</h2>
-    <p>You are logged in with default or reset credentials. Set your personal password before accessing the dashboard.</p>
-    <div class="input-group"><label for="newPassword">New Password</label><input type="password" id="newPassword"></div>
-    <div class="input-group"><label for="confirmPassword">Confirm New Password</label><input type="password" id="confirmPassword"></div>
-    <button class="btn-primary" style="background: #2ecc71; box-shadow: none;" onclick="updatePassword()">Update Password</button>
+    <div class="input-group" id="confirmPasswordGroup" style="display:none;">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm your password">
+    </div>
+
+    <button class="btn-primary" onclick="handleLoginAndAuth()">Login</button>
+    <a class="forgot-pass-link" onclick="triggerDirectEmailPasswordReset()">Forgot Password? Reset via Email</a>
 </div>
 
 <div class="app-content" id="appContent">
@@ -449,10 +482,33 @@
     let initialApprovalCount = null;
     let isProcessingApproval = false;
 
+    let cachedUserEmail = "";
+
     const orderedTimelineMonths = [
         "July2026", "August2026", "September2026", "October2026", "November2026", "December2026",
         "January2027", "February2027", "March2027", "April2027", "May2027", "June2027"
     ];
+
+    function maskEmail(email) {
+        if (!email || !email.includes('@')) return "";
+        const parts = email.split('@');
+        const name = parts[0];
+        const domain = parts[1];
+        if (name.length <= 3) {
+            return name.charAt(0) + '***@' + domain;
+        }
+        return name.slice(0, 2) + '***' + name.slice(-2) + '@' + domain;
+    }
+
+    function showToast(message, type = "info") {
+        const toast = document.getElementById('toastNotification');
+        toast.className = `custom-toast ${type} show`;
+        toast.innerText = message;
+
+        setTimeout(() => {
+            toast.className = 'custom-toast';
+        }, 4000);
+    }
 
     function toggleTheme() {
         const body = document.body;
@@ -468,16 +524,149 @@
         }
     }
 
-    function triggerForgotPasswordWhatsApp() {
+    function onUserSelectionChange() {
         const selectedUser = document.getElementById('username').value;
-        if (!selectedUser) {
-            alert("Please select your name first!");
+        const emailGroup = document.getElementById('emailGroup');
+        const confirmGroup = document.getElementById('confirmPasswordGroup');
+
+        cachedUserEmail = "";
+
+        if (selectedUser === SYSTEM_ADMIN_USER) {
+            cachedUserEmail = "cjfundcollection@gmail.com";
+            emailGroup.style.display = "none";
+            confirmGroup.style.display = "none";
             return;
         }
 
-        const adminPhoneNumber = "919633713902";
-        const message = encodeURIComponent(`Hi Jaisal, I forgot my CJ Fund app password. Please reset my account for ${selectedUser}.`);
-        window.open(`https://wa.me/${adminPhoneNumber}?text=${message}`, '_blank');
+        if (!selectedUser) {
+            emailGroup.style.display = "none";
+            confirmGroup.style.display = "none";
+            return;
+        }
+
+        db.collection("users").doc(selectedUser).get().then(doc => {
+            if (doc.exists && doc.data().email) {
+                cachedUserEmail = doc.data().email;
+                emailGroup.style.display = "none";
+                confirmGroup.style.display = "none";
+            } else {
+                emailGroup.style.display = "block";
+                confirmGroup.style.display = "block";
+            }
+        }).catch(() => {
+            emailGroup.style.display = "block";
+            confirmGroup.style.display = "block";
+        });
+    }
+
+    async function handleLoginAndAuth() {
+        const selectedUser = document.getElementById('username').value;
+        const pass = document.getElementById('password').value.trim();
+
+        if (!selectedUser || !pass) {
+            showToast("Please select your name and enter password!", "error");
+            return;
+        }
+
+        // 🛡️ ADMIN LOGIN
+        if (selectedUser === SYSTEM_ADMIN_USER) {
+            firebase.auth().signInWithEmailAndPassword("cjfundcollection@gmail.com", pass)
+                .then(() => {
+                    localStorage.setItem("cj_active_user", selectedUser);
+                    loginToDashboard(selectedUser);
+                })
+                .catch(() => showToast("Wrong Admin Password!", "error"));
+            return;
+        }
+
+        // 👤 REGULAR USER LOGIN
+        if (cachedUserEmail) {
+            firebase.auth().signInWithEmailAndPassword(cachedUserEmail, pass)
+                .then(() => {
+                    localStorage.setItem("cj_active_user", selectedUser);
+                    loginToDashboard(selectedUser);
+                })
+                .catch(() => {
+                    showToast("Wrong Password! Please try again or reset via Email.", "error");
+                });
+        } else {
+            const email = document.getElementById('userEmail').value.trim();
+            const confirmPass = document.getElementById('confirmPassword').value.trim();
+
+            if (!email) {
+                showToast("Please enter your Email ID for one-time setup!", "error");
+                return;
+            }
+            if (pass !== confirmPass) {
+                showToast("Passwords do not match!", "error");
+                return;
+            }
+            if (pass.length < 6) {
+                showToast("Password must be at least 6 characters!", "error");
+                return;
+            }
+
+            firebase.auth().createUserWithEmailAndPassword(email, pass)
+                .then(() => {
+                    db.collection("users").doc(selectedUser).set({ email: email }, { merge: true });
+                    showToast("Account setup & secured successfully! ✅", "success");
+                    localStorage.setItem("cj_active_user", selectedUser);
+                    loginToDashboard(selectedUser);
+                })
+                .catch((error) => {
+                    if (error.code === 'auth/email-already-in-use') {
+                        firebase.auth().signInWithEmailAndPassword(email, pass)
+                            .then(() => {
+                                db.collection("users").doc(selectedUser).set({ email: email }, { merge: true });
+                                localStorage.setItem("cj_active_user", selectedUser);
+                                loginToDashboard(selectedUser);
+                            })
+                            .catch(() => showToast("Email is in use. Check your credentials or reset password.", "error"));
+                    } else {
+                        showToast(error.message, "error");
+                    }
+                });
+        }
+    }
+
+    function triggerDirectEmailPasswordReset() {
+        const selectedUser = document.getElementById('username').value;
+
+        if (!selectedUser) {
+            showToast("Please choose your name from the dropdown first!", "error");
+            return;
+        }
+
+        if (selectedUser === SYSTEM_ADMIN_USER) {
+            sendResetLink("cjfundcollection@gmail.com");
+            return;
+        }
+
+        if (cachedUserEmail) {
+            sendResetLink(cachedUserEmail);
+        } else {
+            db.collection("users").doc(selectedUser).get().then(doc => {
+                if (doc.exists && doc.data().email) {
+                    sendResetLink(doc.data().email);
+                } else {
+                    const promptEmail = prompt(`No email linked for ${selectedUser}. Please enter your registered Email ID:`);
+                    if (promptEmail && promptEmail.trim()) {
+                        sendResetLink(promptEmail.trim());
+                    }
+                }
+            });
+        }
+    }
+
+    function sendResetLink(email) {
+        firebase.auth().sendPasswordResetEmail(email)
+            .then(() => {
+                const masked = maskEmail(email);
+                showToast(`Password reset link sent to your email ID (${masked})!`, "success");
+            })
+            .catch((error) => {
+                showToast(error.message, "error");
+            });
     }
 
     function sendPushNotification(title, message) {
@@ -497,13 +686,21 @@
 
     function copyUpiId() {
         navigator.clipboard.writeText("9895076221@sbi").then(() => {
-            alert("UPI ID (9895076221@sbi) copied to clipboard!");
+            showToast("UPI ID (9895076221@sbi) copied to clipboard!", "success");
         });
     }
 
     function openUpiAppDirectly() {
         copyUpiId();
-        window.location.href = "upi://pay";
+        const amtInput = document.getElementById('userPayAmountInput');
+        let amount = amtInput ? parseInt(amtInput.value) : 600;
+        if (!amount || amount <= 0) amount = 600;
+
+        const upiId = "9895076221@sbi";
+        const payeeName = "CJ Fund";
+        const note = `CJ Fund Payment - ${currentLoggedInUser || 'Member'}`;
+        
+        window.location.href = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
     }
 
     function logUserActivity(user) {
@@ -512,7 +709,7 @@
             username: user,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
             lastSeenFormatted: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
-        }, { merge: true }).catch(err => console.log("Log error:", err));
+        }, { merge: true }).catch(() => {});
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -531,88 +728,6 @@
             loginToDashboard(sessionUsername); 
         }
     });
-
-    // 🔒 SECURE LOGIN LOGIC
-    async function handleLogin() {
-        const selectedUser = document.getElementById('username').value;
-        const pass = document.getElementById('password').value.trim();
-        
-        if (!selectedUser || !pass) { 
-            alert("Please select your name and enter password!"); 
-            return; 
-        }
-        
-        currentLoggedInUser = selectedUser;
-
-        // 🛡️ അഡ്മിൻ ലോഗിൻ (ഗൂഗിൾ Auth സെർവർ വഴി നേരിട്ട് പരിശോധിക്കുന്നു)
-        if (selectedUser === SYSTEM_ADMIN_USER) {
-            firebase.auth().signInWithEmailAndPassword("cjfundcollection@gmail.com", pass)
-                .then((userCredential) => {
-                    localStorage.setItem("cj_active_user", selectedUser);
-                    loginToDashboard(selectedUser);
-                })
-                .catch((error) => {
-                    alert("Wrong Admin Password!");
-                });
-            return;
-        }
-
-        // മറ്റ് മെമ്പർമാരുടെ ലോഗിൻ
-        db.collection("users").doc(selectedUser).get().then((doc) => {
-            const hasExistingPassword = doc.exists && doc.data().password && String(doc.data().password).trim() !== "";
-
-            if (!hasExistingPassword) {
-                if (pass === "1234") {
-                    document.getElementById('loginPage').style.display = 'none';
-                    document.getElementById('passwordChangePage').style.display = 'block';
-                    return;
-                } else {
-                    alert("Account is reset. Please enter default password '1234' to set your new password.");
-                    return;
-                }
-            }
-
-            const storedPassword = String(doc.data().password || "").trim();
-            if (pass === storedPassword) {
-                localStorage.setItem("cj_active_user", selectedUser);
-                loginToDashboard(selectedUser);
-            } else {
-                alert("Wrong Password! Please try again.");
-            }
-        }).catch(err => {
-            console.error("Login Error:", err);
-            alert("Login Error: " + err.message);
-        });
-    }
-
-    async function updatePassword() {
-        const newPass = document.getElementById('newPassword').value.trim();
-        const confirmPass = document.getElementById('confirmPassword').value.trim();
-
-        if (newPass === "" || newPass === "1234") { 
-            alert("Please enter a valid password (cannot be default '1234')!"); 
-            return; 
-        }
-
-        if (newPass !== confirmPass) {
-            alert("Passwords do not match!");
-            return;
-        }
-
-        try {
-            await db.collection("users").doc(currentLoggedInUser).set({ 
-                password: newPass 
-            }, { merge: true });
-
-            alert("Password updated successfully!");
-            localStorage.setItem("cj_active_user", currentLoggedInUser);
-            document.getElementById('passwordChangePage').style.display = 'none';
-            loginToDashboard(currentLoggedInUser);
-
-        } catch (err) {
-            alert("Failed to update password: " + err.message);
-        }
-    }
 
     function loginToDashboard(user) {
         document.getElementById('loginPage').style.display = 'none';
@@ -641,12 +756,21 @@
         const monthDropdown = document.getElementById('adminTargetMonth');
         if(!monthDropdown) return;
 
+        // Auto detect current month dynamically
+        const currentMonthId = new Date().toLocaleString('default', { month: 'long', year: 'numeric' }).replace(" ", "");
+
         let optionsHTML = orderedTimelineMonths.filter(m => m !== "July2026").map(mId => {
             let disp = mId.replace("2026", " 2026").replace("2027", " 2027");
-            return `<option value="${mId}">${disp}</option>`;
+            let isSelected = (mId === currentMonthId) ? "selected" : "";
+            return `<option value="${mId}" ${isSelected}>${disp}</option>`;
         }).join('');
 
         monthDropdown.innerHTML = optionsHTML;
+
+        if (orderedTimelineMonths.includes(currentMonthId) && currentMonthId !== "July2026") {
+            monthDropdown.value = currentMonthId;
+        }
+
         updateAdminPendingUsersForMonth();
     }
 
@@ -660,7 +784,8 @@
             let pendingUsers = allMembersList.filter(u => !paidUsers.includes(u));
 
             if (pendingUsers.length === 0) {
-                userDropdown.innerHTML = `<option value="">🎉 Everyone Paid for ${selectedMonth.replace("2026", " 2026")}!</option>`;
+                let dispMonth = selectedMonth.replace("2026", " 2026").replace("2027", " 2027");
+                userDropdown.innerHTML = `<option value="">🎉 Everyone Paid for ${dispMonth}!</option>`;
             } else {
                 userDropdown.innerHTML = pendingUsers.map(u => `<option value="${u}">${u}</option>`).join('');
             }
@@ -744,20 +869,22 @@
         if (isProcessingApproval) return;
 
         if(!isApprove) { 
-            if(confirm("Reject ചെയ്യണോ?")) { db.collection("approvals").doc(id).delete(); }
+            if(confirm("Do you want to reject this request?")) { 
+                db.collection("approvals").doc(id).delete(); 
+            }
             return; 
         }
 
         const m1 = document.getElementById(`monthSelect1_${id}`) ? document.getElementById(`monthSelect1_${id}`).value : "";
         const m2 = document.getElementById(`monthSelect2_${id}`) ? document.getElementById(`monthSelect2_${id}`).value : "";
         
-        if(!m1) { alert("Please select Target Month 1!"); return; }
+        if(!m1) { showToast("Please select Target Month 1!", "error"); return; }
 
         const amtInputElem = document.getElementById(`amtInput_${id}`);
         let verifiedAmount = amtInputElem ? parseInt(amtInputElem.value) : 600;
 
         if (!verifiedAmount || verifiedAmount <= 0) {
-            alert("Please enter a valid verified amount!");
+            showToast("Please enter a valid verified amount!", "error");
             return;
         }
 
@@ -808,8 +935,8 @@
 
                     db.collection("approvals").doc(id).delete().then(() => {
                         isProcessingApproval = false;
-                        sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${verifiedAmount} has been recorded.`);
-                        alert(`Approved successfully for ${app.username} (₹${verifiedAmount} for ${monthLabels})!`);
+                        sendPushNotification("Payment Approved! ✅", `${app.username}'s payment of ₹${verifiedAmount} recorded.`);
+                        showToast(`Approved successfully for ${app.username}!`, "success");
                         
                         loadAdminAnnualLedger();
                         updateAdminPendingUsersForMonth();
@@ -818,7 +945,7 @@
             });
         }).catch(err => {
             isProcessingApproval = false;
-            alert("Error approving: " + err.message);
+            showToast("Error approving: " + err.message, "error");
         });
     }
 
@@ -827,8 +954,8 @@
         const m = document.getElementById('adminTargetMonth').value; 
         const descSelectVal = document.getElementById('adminDescType').value;
         
-        if(!m) { alert("Select a month first!"); return; }
-        if(!u) { alert("Select a member or everyone is already paid!"); return; }
+        if(!m) { showToast("Select a month first!", "error"); return; }
+        if(!u) { showToast("Select a member or everyone is already paid!", "error"); return; }
 
         let targetDocId = m;
         let displayMonth = m.replace("2026", " 2026").replace("2027", " 2027");
@@ -837,7 +964,7 @@
         if (descSelectVal === 'CUSTOM') {
             const customVal = document.getElementById('adminCustomDescInput').value.trim();
             if (!customVal) {
-                alert("Please type a custom description note!");
+                showToast("Please type a custom description note!", "error");
                 return;
             }
             finalDescription = customVal;
@@ -849,7 +976,7 @@
             let docData = doc.exists ? doc.data() : { paid: [], pending: [...allMembersList] };
 
             if (docData.paid && docData.paid.includes(u)) {
-                alert(`${u} is already marked as PAID for ${displayMonth}!`);
+                showToast(`${u} is already marked as PAID for ${displayMonth}!`, "info");
                 return;
             }
 
@@ -875,7 +1002,7 @@
                     amount: MONTHLY_SUBSCRIPTION_AMOUNT 
                 });
 
-                alert(`Cleared ${displayMonth} successfully for ${u}!`);
+                showToast(`Cleared ${displayMonth} successfully for ${u}!`, "success");
                 document.getElementById('adminCustomDescInput').value = "";
                 loadAdminAnnualLedger();
                 updateAdminPendingUsersForMonth();
@@ -1038,12 +1165,12 @@
         const selectedAmt = parseInt(document.getElementById('userPayAmountInput').value);
 
         if(!selectedAmt || selectedAmt <= 0) { 
-            alert("Please enter a valid amount!"); 
+            showToast("Please enter a valid amount!", "error"); 
             return; 
         }
 
         if (!file) {
-            alert("⚠️ Please attach the payment screenshot before submitting!");
+            showToast("Please attach the payment screenshot before submitting!", "error");
             return;
         }
 
@@ -1057,12 +1184,12 @@
                 screenshot: base64,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                alert("Payment Proof submitted successfully! Verification in progress. ✅");
+                showToast("Payment Proof submitted successfully! ✅", "success");
                 hidePaymentForm();
                 document.getElementById('screenshotFile').value = "";
                 updatePaymentStatusPanel(currentLoggedInUser);
             }).catch((err) => {
-                alert("Failed to submit proof: " + err.message);
+                showToast("Failed to submit proof: " + err.message, "error");
             });
         };
 
