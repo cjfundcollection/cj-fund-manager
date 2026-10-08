@@ -228,6 +228,40 @@
         }
 
         @keyframes slideUp { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* 📌 STICKY FIRST COLUMN (Freeze Pane for Members Name) */
+        #adminLedgerTable th:first-child,
+        #adminLedgerTable td:first-child,
+        #matrixStatementTable th:first-child,
+        #matrixStatementTable td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 5;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.15);
+        }
+
+        #adminLedgerTable th:first-child {
+            z-index: 10;
+            background-color: #3b1563 !important;
+            color: #ffd700 !important;
+        }
+
+        #matrixStatementTable th:first-child {
+            z-index: 10;
+            background-color: #f2f2f2 !important;
+            color: #333 !important;
+        }
+
+        #adminLedgerTable td:first-child,
+        #matrixStatementTable td:first-child {
+            background-color: #ffffff !important;
+            color: #333 !important;
+        }
+
+        #adminLedgerTable tr:last-child td:first-child,
+        #matrixStatementTable tr:last-child td:first-child {
+            background-color: #eaeded !important;
+        }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
